@@ -1,4 +1,5 @@
 import struct
+import time
 import HDL_CAN
 
 REGx_INPUT_AC_VOLT_MAX = 530  # Unit: V
@@ -340,6 +341,7 @@ def REGx_SetComprehensive(dstAddr, sub_cmd_hi: int, sub_cmd_lo: int, value: int)
     request.data = bytearray(8)
     request.data[0] = sub_cmd_hi & 0xFF
     request.data[1] = sub_cmd_lo & 0xFF
+    # data[2..6] 为协议保留字节，保持为 0
     request.data[7] = value & 0xFF
     REGx_MsgSend(request)
     return 0
@@ -399,13 +401,14 @@ def REGx_SetSleep(dstAddr, sleep: bool):
 
 def REGx_SetSystemOutput(dstAddr, volt: float, total_curr: float):
     volt = max(REGx_OUTPUT_DC_VOLT_MIN, min(volt, REGx_OUTPUT_DC_VOLT_MAX))
-    total_curr = max(0.0, total_curr)
+    total_curr = max(REGx_OUTPUT_DC_CURR_MIN, min(total_curr, REGx_OUTPUT_DC_CURR_MAX))
     request = REGx_Msg_t()
     request.errorCode = REGx_ERROR_CODE.NORMAL
     request.deviceCode = REGx_DEVICE_CODE.SINGLE
     request.cmdCode = 0x1B
     request.dstAddr = dstAddr
     request.srcAddr = REGx_MASTER_ADDR
+    request.data = bytearray(8)
     voltSetValue = int(volt * 1000)
     currSetValue = int(total_curr * 1000)
     request.data[0] = (voltSetValue >> 24) & 0xFF
@@ -432,8 +435,6 @@ def REGx_SetAddressMode(dstAddr, dip_switch: bool):
     REGx_MsgSend(request)
     return 0
 
-
-import time
 
 last_request_time = 0
 request_list = [lambda : REGx_ReadStateRequest(0x00),
