@@ -109,7 +109,7 @@ class MainWindow(QFrame, Ui_Form):
         # Start timer for checking data
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.checkForData)
-        self.timer.start(100)  # Check for data every second
+        self.timer.start(90)  # Check for data every second
 
         self.timerCANHeart = QTimer(self)
         self.timerCANHeart.timeout.connect(self.CANHeartBeat)

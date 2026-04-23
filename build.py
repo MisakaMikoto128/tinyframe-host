@@ -241,6 +241,12 @@ def build(mode: str):
 
         # PyQt5 plugin — handles Qt DLLs, plugins, translations automatically
         '--enable-plugins=pyqt5',
+        # multiprocessing support (used indirectly by some Qt / Python internals)
+        '--enable-plugins=multiprocessing',
+        # Anti-bloat: removes accidental heavy imports (tkinter, IPython, etc.)
+        '--enable-plugins=anti-bloat',
+        # Link-time optimisation — reduces binary size
+        '--lto=yes',
 
         # Windows PE version resource
         f'--company-name={APP_COMPANY}',
@@ -300,6 +306,11 @@ def build(mode: str):
         # qfluentwidgets ships Python resource files (icons, QSS) — include all
         '--include-package=qfluentwidgets',
         '--include-package-data=qfluentwidgets',
+        # qframelesswindow is a hard dependency of qfluentwidgets (FluentWindow)
+        # Missing this package is the most common cause of startup failure
+        '--include-package=qframelesswindow',
+        '--include-package=qframelesswindow.titlebar',
+        '--include-package-data=qframelesswindow',
 
         # ── Data files bundled into the package ───────────────
         # CAN hardware driver DLL
