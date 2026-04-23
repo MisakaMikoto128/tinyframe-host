@@ -10,7 +10,8 @@ from PyQt5.QtGui import (QColor, QFont, QLinearGradient, QPainter,
                           QPainterPath, QPen, QBrush)
 from PyQt5.QtWidgets import (QFrame, QHBoxLayout, QLabel, QSizePolicy,
                               QVBoxLayout, QWidget)
-from qfluentwidgets import CaptionLabel, CheckBox, StrongBodyLabel, isDarkTheme
+from qfluentwidgets import (CaptionLabel, CheckBox, FluentIcon as FIF,
+                             StrongBodyLabel, ToolButton, isDarkTheme)
 
 # ─── 配色（Catppuccin Mocha × Fluent）─────────────────────────
 _VOLT_HEX = '#60a5fa'   # 蓝
@@ -169,6 +170,23 @@ class _ChartCanvas(QWidget):
         self._draw_line(painter, c._curr_data, c._show_curr,
                         _CURR_HEX, c._curr_max, px, py, pw, ph, c._max_points)
 
+        # ── 暂停遮罩 ─────────────────────────────────────────
+        if c._paused:
+            painter.setClipping(False)
+            painter.fillRect(self.rect(), QColor(0, 0, 0, 60))
+            tag_w, tag_h = 90, 26
+            tag_x = W - rm - tag_w - 4
+            tag_y = py + 6
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(251, 146, 60, 200))
+            painter.drawRoundedRect(QRectF(tag_x, tag_y, tag_w, tag_h), 4, 4)
+            font_tag = QFont('Microsoft YaHei', 9)
+            font_tag.setBold(True)
+            painter.setFont(font_tag)
+            painter.setPen(QColor(255, 255, 255))
+            painter.drawText(int(tag_x), int(tag_y), tag_w, tag_h,
+                             Qt.AlignCenter, '⏸  已暂停')
+
         painter.end()
 
     # ── 辅助：绘制普通折线 ───────────────────────────────────
@@ -259,11 +277,14 @@ class RealtimeChart(QFrame):
         self._show_volt  = True
         self._show_curr  = True
         self._show_pwr   = True
+        self._paused     = False
         self.setFrameShape(QFrame.NoFrame)
         self._build_ui()
 
     # ── 公共接口 ─────────────────────────────────────────────
     def push(self, volt: float, curr: float, power: float):
+        if self._paused:
+            return
         self._volt_data.append(float(volt))
         self._curr_data.append(float(curr))
         self._pwr_data.append(float(power))
@@ -283,6 +304,13 @@ class RealtimeChart(QFrame):
         hdr.addWidget(StrongBodyLabel('实时曲线'))
         hdr.addStretch()
         hdr.addWidget(CaptionLabel(f'时间窗口 {self.WINDOW_SECONDS} s'))
+
+        self._pause_btn = ToolButton(FIF.PAUSE, self)
+        self._pause_btn.setToolTip('暂停 / 恢复')
+        self._pause_btn.setFixedSize(28, 28)
+        self._pause_btn.clicked.connect(self._toggle_pause)
+        hdr.addWidget(self._pause_btn)
+
         vbox.addLayout(hdr)
 
         # 图例行
@@ -317,3 +345,8 @@ class RealtimeChart(QFrame):
         elif series == 'pwr':
             self._show_pwr = show
         self._canvas.update()
+
+    def _toggle_pause(self):
+        self._paused = not self._paused
+        self._pause_btn.setIcon(FIF.PLAY if self._paused else FIF.PAUSE)
+        self._canvas.update()  # 刷新以显示/隐藏暂停提示
