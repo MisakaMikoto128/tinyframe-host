@@ -1,4 +1,5 @@
 import sys
+from config_manager import ConfigManager, AppConfig
 import time
 
 from PyQt5.QtCore import QTimer
@@ -23,11 +24,11 @@ from REG1K0100A2 import *
 
 
 class MainWindow(QFrame, Ui_Form):
-    def __init__(self, parent=None):
+    def __init__(self, config: AppConfig = None, parent=None):
         super().__init__(parent=parent)
 
-        # loadUi('FluentQtTest.ui', self)  # Load the UI file
         self.setupUi(self)
+        self._config = config or AppConfig()
 
         setThemeColor('#28afe9')
 
@@ -64,8 +65,10 @@ class MainWindow(QFrame, Ui_Form):
         self.TableWidget_Charger.setEditTriggers(TableWidget.NoEditTriggers)
         self.TableWidget_Charger.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        self.DoubleSpinBox_Volt.setValue(320)
-        self.DoubleSpinBox_Curr.setValue(10)
+        self.DoubleSpinBox_Volt.setRange(self._config.voltage_min, self._config.voltage_max)
+        self.DoubleSpinBox_Volt.setValue(min(320, self._config.voltage_max))
+        self.DoubleSpinBox_Curr.setRange(self._config.current_min, self._config.current_max)
+        self.DoubleSpinBox_Curr.setValue(min(10, self._config.current_max))
 
         # Connect signals with slots
         self.ToggleButtonCAN.clicked.connect(self.toggleCAN)
@@ -299,8 +302,10 @@ class Window(FluentWindow):
     def __init__(self):
         super().__init__()
 
+        self._config = ConfigManager().load()
+
         # create sub interface
-        self.homeInterface = MainWindow(self)
+        self.homeInterface = MainWindow(config=self._config, parent=self)
         # self.musicInterface = Widget('Music Interface', self)
         # self.videoInterface = Widget('Video Interface', self)
         # self.folderInterface = Widget('Folder Interface', self)
@@ -356,7 +361,7 @@ class Window(FluentWindow):
         # self.setWindowIcon(QIcon(':/qfluentwidgets/images/logo.png'))
         # self.setWindowTitle('PyQt-Fluent-Widgets')
 
-        self.setWindowTitle('REG1K0100A2 充电模块上位机')
+        self.setWindowTitle(self._config.device_name)
         self.setWindowIcon(QIcon('./img/star.png'))
 
         desktop = QApplication.desktop().availableGeometry()
