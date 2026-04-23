@@ -110,7 +110,6 @@ python -m nuitka ^
     --nofollow-import-to=PyQt5.QtWebEngineCore ^
     --nofollow-import-to=PyQt5.QtWebEngineWidgets ^
     --nofollow-import-to=PyQt5.QtWebSockets ^
-    --nofollow-import-to=PyQt5.QtXml ^
     --nofollow-import-to=*.tests ^
     --nofollow-import-to=*.test ^
     --nofollow-import-to=*.testing ^

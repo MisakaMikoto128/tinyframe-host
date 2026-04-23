@@ -297,7 +297,6 @@ def build(mode: str):
         '--nofollow-import-to=PyQt5.QtWebEngineCore',
         '--nofollow-import-to=PyQt5.QtWebEngineWidgets',
         '--nofollow-import-to=PyQt5.QtWebSockets',
-        '--nofollow-import-to=PyQt5.QtXml',
         '--nofollow-import-to=PyQt5.QtXmlPatterns',
         '--nofollow-import-to=numpy.testing',
         '--nofollow-import-to=numpy.tests',

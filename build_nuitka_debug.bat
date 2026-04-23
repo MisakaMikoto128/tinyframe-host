@@ -1,42 +1,42 @@
 @echo off
 chcp 65001 > nul
-echo ============================================================
-echo    REG1K0100A2 充电模块上位机  Nuitka DEBUG 打包
-echo    * CMD 窗口保持可见，方便查看启动报错
-echo    * 禁用 LTO 和 -OO，保留调试信息，编译更快
-echo ============================================================
-echo.
+echo "============================================================"
+echo "    REG1K0100A2 Charging Module Host Computer Nuitka DEBUG Packaging"
+echo "    * CMD window remains visible for easy startup error viewing"
+echo "    * Disable LTO and -OO, preserve debug info, faster compilation"
+echo "============================================================"
+echo ""
 
-REM ── 切换到脚本所在目录 ──────────────────────────────────────
+::REM ── Switch to script directory ──────────────────────────────
 cd /d "%~dp0"
 
-REM ── 检查 Python ─────────────────────────────────────────────
+::REM ── Check Python ────────────────────────────────────────────
 python --version > nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] 未找到 Python，请确认已添加到 PATH。
+    echo "[ERROR] Python not found, please confirm it is added to PATH."
     pause & exit /b 1
 )
 
-REM ── 激活虚拟环境 ────────────────────────────────────────────
+::REM ── Activate virtual environment ────────────────────────────
 if exist .venv\Scripts\activate.bat (
-    echo [INFO]  激活虚拟环境 .venv ...
+    echo "[INFO]  Activating virtual environment .venv ..."
     call .venv\Scripts\activate.bat
 ) else if exist venv\Scripts\activate.bat (
-    echo [INFO]  激活虚拟环境 venv ...
+    echo "[INFO]  Activating virtual environment venv ..."
     call venv\Scripts\activate.bat
 ) else (
-    echo [WARN]  未找到虚拟环境，使用系统 Python。
+    echo "[WARN]  Virtual environment not found, using system Python."
 )
 
-REM ── 检查 / 安装 Nuitka ──────────────────────────────────────
+::REM ── Check / Install Nuitka ──────────────────────────────────
 python -c "import nuitka" > nul 2>&1
 if errorlevel 1 (
-    echo [INFO]  安装 Nuitka ...
+    echo "[INFO]  Installing Nuitka ..."
     pip install nuitka
-    if errorlevel 1 ( echo [ERROR] Nuitka 安装失败！ & pause & exit /b 1 )
+    if errorlevel 1 ( echo "[ERROR] Nuitka installation failed!" & pause & exit /b 1 )
 )
 
-REM ── 编译器缓存目录（与正式版共享，加快二次编译）─────────────
+::REM ── Compiler cache directory (shared with release version, speed up recompilation) ──
 set NUITKA_CACHE_DIR_DOWNLOADS=.build_cache\nuitka_downloads
 set NUITKA_CACHE_DIR_CCACHE=.build_cache\nuitka_ccache
 set NUITKA_CACHE_DIR_CLCACHE=.build_cache\nuitka_clcache
@@ -45,10 +45,10 @@ set NUITKA_CACHE_DIR_DLL_DEPENDENCIES=.build_cache\nuitka_dll_dep
 
 set PYTHONUNBUFFERED=1
 set start_time=%time%
-echo.
-echo [INFO]  开始 DEBUG 打包... %start_time%
-echo [INFO]  输出目录：release\main.dist\
-echo.
+echo ""
+echo "[INFO]  Starting DEBUG packaging... %start_time%"
+echo "[INFO]  Output directory: release\main.dist\"
+echo ""
 
 python -m nuitka ^
     --msvc=latest ^
@@ -58,10 +58,10 @@ python -m nuitka ^
     --windows-console-mode=attach ^
     --windows-icon-from-ico=img\star.ico ^
     --windows-company-name="INFYPOWER" ^
-    --windows-product-name="REG1K0100A2 充电模块上位机 [DEBUG]" ^
+    --windows-product-name="REG1K0100A2 Charging Module Host Computer [DEBUG]" ^
     --windows-file-version=0.0.0.1 ^
     --windows-product-version=0.0.0.1 ^
-    --windows-file-description="REG1K0100A2 充电模块上位机 DEBUG" ^
+    --windows-file-description="REG1K0100A2 Charging Module Host Computer DEBUG" ^
     --python-flag=no_site ^
     --enable-plugin=pyqt5 ^
     --enable-plugin=multiprocessing ^
@@ -106,7 +106,6 @@ python -m nuitka ^
     --nofollow-import-to=PyQt5.QtWebEngineCore ^
     --nofollow-import-to=PyQt5.QtWebEngineWidgets ^
     --nofollow-import-to=PyQt5.QtWebSockets ^
-    --nofollow-import-to=PyQt5.QtXml ^
     --nofollow-import-to=*.tests ^
     --nofollow-import-to=*.test ^
     --nofollow-import-to=*.testing ^
@@ -114,24 +113,24 @@ python -m nuitka ^
     --output-dir=release ^
     main.py
 
-echo.
-echo [INFO]  DEBUG 打包结束 %time%（开始 %start_time%）
+echo ""
+echo "[INFO]  DEBUG packaging completed %time% (started %start_time%)"
 
 if errorlevel 1 (
-    echo [ERROR] 打包失败！
+    echo "[ERROR] Packaging failed!"
     pause & exit /b 1
 )
 
-REM ── 复制 config.json ────────────────────────────────────────
+::REM ── Copy config.json ────────────────────────────────────────
 if exist config.json (
     copy /y config.json release\main.dist\config.json > nul
-    echo [INFO]  已复制 config.json
+    echo "[INFO]  config.json copied"
 )
 
-echo.
-echo ============================================================
-echo  DEBUG 打包成功！
-echo  执行 release\main.dist\INFY_POWER_debug.exe
-echo  启动时 CMD 窗口会保持可见，print / traceback 均可看到。
-echo ============================================================
+echo ""
+echo "============================================================"
+echo "  DEBUG packaging successful!"
+echo "  Execute release\main.dist\INFY_POWER_debug.exe"
+echo "  CMD window will remain visible on startup, print / traceback visible."
+echo "============================================================"
 pause
