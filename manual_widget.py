@@ -406,7 +406,8 @@ class ManualWidget(QFrame):
             cursor.select(QTextCursor.BlockUnderCursor)
             cursor.removeSelectedText()
             cursor.deleteChar()
-        self._log_text.scrollToBottom()
+        sb = self._log_text.verticalScrollBar()
+        sb.setValue(sb.maximum())
 
     def _clear_log(self):
         self._log_text.clear()
