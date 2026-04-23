@@ -1,0 +1,1 @@
+pyinstaller -D -w -i .\img\star.ico .\main.py

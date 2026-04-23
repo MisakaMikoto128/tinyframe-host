@@ -1,0 +1,7 @@
+/dist/
+/build/
+/test.py
+/main.spec
+/.idea/
+.vscode/*
+__pycache__/*
