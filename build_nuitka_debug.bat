@@ -7,17 +7,14 @@ echo "    * Disable LTO and -OO, preserve debug info, faster compilation"
 echo "============================================================"
 echo ""
 
-::REM ── Switch to script directory ──────────────────────────────
 cd /d "%~dp0"
 
-::REM ── Check Python ────────────────────────────────────────────
 python --version > nul 2>&1
 if errorlevel 1 (
     echo "[ERROR] Python not found, please confirm it is added to PATH."
     pause & exit /b 1
 )
 
-::REM ── Activate virtual environment ────────────────────────────
 if exist .venv\Scripts\activate.bat (
     echo "[INFO]  Activating virtual environment .venv ..."
     call .venv\Scripts\activate.bat
@@ -28,7 +25,6 @@ if exist .venv\Scripts\activate.bat (
     echo "[WARN]  Virtual environment not found, using system Python."
 )
 
-::REM ── Check / Install Nuitka ──────────────────────────────────
 python -c "import nuitka" > nul 2>&1
 if errorlevel 1 (
     echo "[INFO]  Installing Nuitka ..."
@@ -36,7 +32,6 @@ if errorlevel 1 (
     if errorlevel 1 ( echo "[ERROR] Nuitka installation failed!" & pause & exit /b 1 )
 )
 
-::REM ── Compiler cache directory (shared with release version, speed up recompilation) ──
 set NUITKA_CACHE_DIR_DOWNLOADS=.build_cache\nuitka_downloads
 set NUITKA_CACHE_DIR_CCACHE=.build_cache\nuitka_ccache
 set NUITKA_CACHE_DIR_CLCACHE=.build_cache\nuitka_clcache
@@ -121,7 +116,6 @@ if errorlevel 1 (
     pause & exit /b 1
 )
 
-::REM ── Copy config.json ────────────────────────────────────────
 if exist config.json (
     copy /y config.json release\main.dist\config.json > nul
     echo "[INFO]  config.json copied"
