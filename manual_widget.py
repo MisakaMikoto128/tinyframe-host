@@ -246,7 +246,7 @@ class ManualWidget(QFrame):
                 w = ComboBox(container)
                 for opt in p['options']:
                     w.addItem(opt)
-                w.setFixedWidth(90)
+                w.setMinimumWidth(110)
                 h.addWidget(w)
                 self._row_widgets[cmd_code][p['key']] = w
             elif p['type'] == 'double':
@@ -290,7 +290,7 @@ class ManualWidget(QFrame):
 
     def _build_log(self) -> QWidget:
         frame = QFrame(self)
-        frame.setFrameShape(QFrame.StyledPanel)
+        frame.setFrameShape(QFrame.NoFrame)
         v = QVBoxLayout(frame)
         v.setContentsMargins(8, 6, 8, 6)
         v.setSpacing(4)
@@ -301,7 +301,7 @@ class ManualWidget(QFrame):
         hh.addWidget(CaptionLabel('📋 CAN 报文日志', frame))
         hh.addStretch()
         clear_btn = PushButton('清空')
-        clear_btn.setFixedSize(64, 24)
+        clear_btn.setFixedWidth(64)
         clear_btn.clicked.connect(self._clear_log)
         hh.addWidget(clear_btn)
         v.addWidget(header)
