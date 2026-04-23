@@ -436,6 +436,25 @@ def REGx_SetAddressMode(dstAddr, dip_switch: bool):
     return 0
 
 
+def REGx_SetLiquidCoolTemp(dstAddr, tin: int, tout: int, tamb: int):
+    # 协议 0x0F sub_cmd 0x13 0x01：进水口/出水口/环温（单字节有符号数，& 0xFF 转补码）
+    req = REGx_Msg_t()
+    req.errorCode = REGx_ERROR_CODE.NORMAL
+    req.deviceCode = REGx_DEVICE_CODE.SINGLE
+    req.cmdCode = 0x0F
+    req.dstAddr = dstAddr
+    req.srcAddr = REGx_MASTER_ADDR
+    req.data = bytearray(8)
+    req.data[0] = 0x13
+    req.data[1] = 0x01
+    # data[2..4] reserved，保持为 0
+    req.data[5] = tin & 0xFF
+    req.data[6] = tout & 0xFF
+    req.data[7] = tamb & 0xFF
+    REGx_MsgSend(req)
+    return 0
+
+
 last_request_time = 0
 request_list = [lambda : REGx_ReadStateRequest(0x00),
                 lambda : REGx_ReadInputRequest(0x00),

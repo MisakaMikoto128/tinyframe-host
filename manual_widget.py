@@ -398,19 +398,19 @@ class ManualWidget(QFrame):
         form.setContentsMargins(20, 20, 20, 20)
 
         # 工作模式
-        work_combo = QComboBox(dlg)
+        work_combo = ComboBox(dlg)
         for txt in ['DCDC', 'MPPT', '输入恒压']:
             work_combo.addItem(txt)
         form.addRow('工作模式:', work_combo)
 
         # 降噪模式
-        noise_combo = QComboBox(dlg)
+        noise_combo = ComboBox(dlg)
         for txt in ['功率优先', '降噪模式', '静音模式']:
             noise_combo.addItem(txt)
         form.addRow('降噪模式:', noise_combo)
 
         # 高低压模式
-        volt_combo = QComboBox(dlg)
+        volt_combo = ComboBox(dlg)
         for txt in ['低压模式', '高压模式', '自动切换']:
             volt_combo.addItem(txt)
         form.addRow('高低压模式:', volt_combo)
@@ -441,30 +441,13 @@ class ManualWidget(QFrame):
             return
 
         dst = self._get_target_addr(0x0F)
+        _VALUES = (0xA0, 0xA1, 0xA2)
 
-        # 工作模式: sub_cmd 0x11 0x11, value 0xA0/A1/A2
-        work_values = [0xA0, 0xA1, 0xA2]
-        reg.REGx_SetComprehensive(dst, 0x11, 0x11, work_values[work_combo.currentIndex()])
-
-        # 降噪模式: sub_cmd 0x11 0x13, value 0xA0/A1/A2
-        noise_values = [0xA0, 0xA1, 0xA2]
-        reg.REGx_SetComprehensive(dst, 0x11, 0x13, noise_values[noise_combo.currentIndex()])
-
-        # 高低压模式: sub_cmd 0x11 0x14, value 0xA0/A1/A2
-        volt_values = [0xA0, 0xA1, 0xA2]
-        reg.REGx_SetComprehensive(dst, 0x11, 0x14, volt_values[volt_combo.currentIndex()])
-
-        # 液冷温度: 0x0F with sub_cmd 0x13 0x01, 直接构造报文
-        req = reg.REGx_Msg_t()
-        req.errorCode = reg.REGx_ERROR_CODE.NORMAL
-        req.deviceCode = reg.REGx_DEVICE_CODE.SINGLE
-        req.cmdCode = 0x0F
-        req.dstAddr = dst
-        req.srcAddr = reg.REGx_MASTER_ADDR
-        req.data = bytearray(8)
-        req.data[0] = 0x13
-        req.data[1] = 0x01
-        req.data[5] = tin_spin.value() & 0xFF
-        req.data[6] = tout_spin.value() & 0xFF
-        req.data[7] = tamb_spin.value() & 0xFF
-        reg.REGx_MsgSend(req)
+        try:
+            reg.REGx_SetComprehensive(dst, 0x11, 0x11, _VALUES[work_combo.currentIndex()])
+            reg.REGx_SetComprehensive(dst, 0x11, 0x13, _VALUES[noise_combo.currentIndex()])
+            reg.REGx_SetComprehensive(dst, 0x11, 0x14, _VALUES[volt_combo.currentIndex()])
+            reg.REGx_SetLiquidCoolTemp(dst, tin_spin.value(), tout_spin.value(), tamb_spin.value())
+        except Exception as e:
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.critical(self, '发送失败', f'0x0F 命令发送失败：{e}')
