@@ -179,6 +179,90 @@ def REGx_ReadOutputSetRequest(dstAddr):
 
     return 0
 
+def REGx_ReadSystemVoltCurrFloat(dstAddr):
+    request = REGx_Msg_t()
+    request.errorCode = REGx_ERROR_CODE.NORMAL
+    request.deviceCode = REGx_DEVICE_CODE.SINGLE
+    request.cmdCode = 0x01
+    request.dstAddr = dstAddr
+    request.srcAddr = REGx_MASTER_ADDR
+    request.data = bytearray(8)
+    REGx_MsgSend(request)
+    return 0
+
+
+def REGx_ReadModuleCount(dstAddr):
+    request = REGx_Msg_t()
+    request.errorCode = REGx_ERROR_CODE.NORMAL
+    request.deviceCode = REGx_DEVICE_CODE.SINGLE
+    request.cmdCode = 0x02
+    request.dstAddr = dstAddr
+    request.srcAddr = REGx_MASTER_ADDR
+    request.data = bytearray(8)
+    REGx_MsgSend(request)
+    return 0
+
+
+def REGx_ReadModuleVoltCurrFloat(dstAddr):
+    request = REGx_Msg_t()
+    request.errorCode = REGx_ERROR_CODE.NORMAL
+    request.deviceCode = REGx_DEVICE_CODE.SINGLE
+    request.cmdCode = 0x03
+    request.dstAddr = dstAddr
+    request.srcAddr = REGx_MASTER_ADDR
+    request.data = bytearray(8)
+    REGx_MsgSend(request)
+    return 0
+
+
+def REGx_ReadSystemVoltCurrFixed(dstAddr):
+    request = REGx_Msg_t()
+    request.errorCode = REGx_ERROR_CODE.NORMAL
+    request.deviceCode = REGx_DEVICE_CODE.SINGLE
+    request.cmdCode = 0x08
+    request.dstAddr = dstAddr
+    request.srcAddr = REGx_MASTER_ADDR
+    request.data = bytearray(8)
+    REGx_MsgSend(request)
+    return 0
+
+
+def REGx_ReadModuleParams(dstAddr):
+    request = REGx_Msg_t()
+    request.errorCode = REGx_ERROR_CODE.NORMAL
+    request.deviceCode = REGx_DEVICE_CODE.SINGLE
+    request.cmdCode = 0x0A
+    request.dstAddr = dstAddr
+    request.srcAddr = REGx_MASTER_ADDR
+    request.data = bytearray(8)
+    REGx_MsgSend(request)
+    return 0
+
+
+def REGx_ReadBarcode(dstAddr):
+    request = REGx_Msg_t()
+    request.errorCode = REGx_ERROR_CODE.NORMAL
+    request.deviceCode = REGx_DEVICE_CODE.SINGLE
+    request.cmdCode = 0x0B
+    request.dstAddr = dstAddr
+    request.srcAddr = REGx_MASTER_ADDR
+    request.data = bytearray(8)
+    REGx_MsgSend(request)
+    return 0
+
+
+def REGx_ReadExternalVoltCurr(dstAddr):
+    request = REGx_Msg_t()
+    request.errorCode = REGx_ERROR_CODE.NORMAL
+    request.deviceCode = REGx_DEVICE_CODE.SINGLE
+    request.cmdCode = 0x0C
+    request.dstAddr = dstAddr
+    request.srcAddr = REGx_MASTER_ADDR
+    request.data = bytearray(8)
+    REGx_MsgSend(request)
+    return 0
+
+
 def REGx_SetOutput(dstAddr, volt, curr):
     # Clamp voltage and current within their respective bounds
     volt = max(REGx_OUTPUT_DC_VOLT_MIN, min(volt, REGx_OUTPUT_DC_VOLT_MAX))
@@ -353,5 +437,28 @@ def REGx_CAN_ReceviceCallback(can_msg,canController_info:CANControllerInfo):
             else:
                 canController_info.ChargerState = 0
 
+        elif response.cmdCode == 0x01:
+            canController_info.SystemVolt = struct.unpack('>f', bytes(response.data[0:4]))[0]
+            canController_info.SystemCurr = struct.unpack('>f', bytes(response.data[4:8]))[0]
+        elif response.cmdCode == 0x02:
+            canController_info.ModuleCount = response.data[2]
+        elif response.cmdCode == 0x03:
+            canController_info.ModuleVoltFloat = struct.unpack('>f', bytes(response.data[0:4]))[0]
+            canController_info.ModuleCurrFloat = struct.unpack('>f', bytes(response.data[4:8]))[0]
+        elif response.cmdCode == 0x08:
+            canController_info.SystemVolt = ((response.data[0] << 24) | (response.data[1] << 16) |
+                                             (response.data[2] << 8) | response.data[3]) / 1000.0
+            canController_info.SystemCurr = ((response.data[4] << 24) | (response.data[5] << 16) |
+                                             (response.data[6] << 8) | response.data[7]) / 1000.0
+        elif response.cmdCode == 0x0A:
+            canController_info.ParamVoltMax = float((response.data[0] << 8) | response.data[1])
+            canController_info.ParamVoltMin = float((response.data[2] << 8) | response.data[3])
+            canController_info.ParamCurrMax = ((response.data[4] << 8) | response.data[5]) * 0.1
+            canController_info.ParamPower = ((response.data[6] << 8) | response.data[7]) * 10.0
+        elif response.cmdCode == 0x0B:
+            canController_info.Barcode = ' '.join(f'{b:02X}' for b in response.data)
+        elif response.cmdCode == 0x0C:
+            canController_info.ExternalVolt = ((response.data[0] << 8) | response.data[1]) * 0.1
+            canController_info.AllowedCurr = ((response.data[2] << 8) | response.data[3]) * 0.1
         else:
             pass
