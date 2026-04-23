@@ -330,6 +330,108 @@ def REGx_CloseOutput(dstAddr):
     return 0
 
 
+def REGx_SetComprehensive(dstAddr, sub_cmd_hi: int, sub_cmd_lo: int, value: int):
+    request = REGx_Msg_t()
+    request.errorCode = REGx_ERROR_CODE.NORMAL
+    request.deviceCode = REGx_DEVICE_CODE.SINGLE
+    request.cmdCode = 0x0F
+    request.dstAddr = dstAddr
+    request.srcAddr = REGx_MASTER_ADDR
+    request.data = bytearray(8)
+    request.data[0] = sub_cmd_hi & 0xFF
+    request.data[1] = sub_cmd_lo & 0xFF
+    request.data[7] = value & 0xFF
+    REGx_MsgSend(request)
+    return 0
+
+
+def REGx_SetWalkIn(dstAddr, enable: bool):
+    request = REGx_Msg_t()
+    request.errorCode = REGx_ERROR_CODE.NORMAL
+    request.deviceCode = REGx_DEVICE_CODE.SINGLE
+    request.cmdCode = 0x13
+    request.dstAddr = dstAddr
+    request.srcAddr = REGx_MASTER_ADDR
+    request.data = bytearray(8)
+    request.data[0] = 0x01 if enable else 0x00
+    REGx_MsgSend(request)
+    return 0
+
+
+def REGx_SetGreenLED(dstAddr, blink: bool):
+    request = REGx_Msg_t()
+    request.errorCode = REGx_ERROR_CODE.NORMAL
+    request.deviceCode = REGx_DEVICE_CODE.SINGLE
+    request.cmdCode = 0x14
+    request.dstAddr = dstAddr
+    request.srcAddr = REGx_MASTER_ADDR
+    request.data = bytearray(8)
+    request.data[0] = 0x01 if blink else 0x00
+    REGx_MsgSend(request)
+    return 0
+
+
+def REGx_SetGroupNumber(dstAddr, group: int):
+    request = REGx_Msg_t()
+    request.errorCode = REGx_ERROR_CODE.NORMAL
+    request.deviceCode = REGx_DEVICE_CODE.SINGLE
+    request.cmdCode = 0x16
+    request.dstAddr = dstAddr
+    request.srcAddr = REGx_MASTER_ADDR
+    request.data = bytearray(8)
+    request.data[0] = group & 0xFF
+    REGx_MsgSend(request)
+    return 0
+
+
+def REGx_SetSleep(dstAddr, sleep: bool):
+    request = REGx_Msg_t()
+    request.errorCode = REGx_ERROR_CODE.NORMAL
+    request.deviceCode = REGx_DEVICE_CODE.SINGLE
+    request.cmdCode = 0x19
+    request.dstAddr = dstAddr
+    request.srcAddr = REGx_MASTER_ADDR
+    request.data = bytearray(8)
+    request.data[0] = 0x01 if sleep else 0x00
+    REGx_MsgSend(request)
+    return 0
+
+
+def REGx_SetSystemOutput(dstAddr, volt: float, total_curr: float):
+    volt = max(REGx_OUTPUT_DC_VOLT_MIN, min(volt, REGx_OUTPUT_DC_VOLT_MAX))
+    total_curr = max(0.0, total_curr)
+    request = REGx_Msg_t()
+    request.errorCode = REGx_ERROR_CODE.NORMAL
+    request.deviceCode = REGx_DEVICE_CODE.SINGLE
+    request.cmdCode = 0x1B
+    request.dstAddr = dstAddr
+    request.srcAddr = REGx_MASTER_ADDR
+    voltSetValue = int(volt * 1000)
+    currSetValue = int(total_curr * 1000)
+    request.data[0] = (voltSetValue >> 24) & 0xFF
+    request.data[1] = (voltSetValue >> 16) & 0xFF
+    request.data[2] = (voltSetValue >> 8) & 0xFF
+    request.data[3] = voltSetValue & 0xFF
+    request.data[4] = (currSetValue >> 24) & 0xFF
+    request.data[5] = (currSetValue >> 16) & 0xFF
+    request.data[6] = (currSetValue >> 8) & 0xFF
+    request.data[7] = currSetValue & 0xFF
+    REGx_MsgSend(request)
+    return 0
+
+
+def REGx_SetAddressMode(dstAddr, dip_switch: bool):
+    request = REGx_Msg_t()
+    request.errorCode = REGx_ERROR_CODE.NORMAL
+    request.deviceCode = REGx_DEVICE_CODE.SINGLE
+    request.cmdCode = 0x1F
+    request.dstAddr = dstAddr
+    request.srcAddr = REGx_MASTER_ADDR
+    request.data = bytearray(8)
+    request.data[0] = 0x01 if dip_switch else 0x00
+    REGx_MsgSend(request)
+    return 0
+
 
 import time
 
