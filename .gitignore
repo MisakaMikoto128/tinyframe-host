@@ -7,3 +7,6 @@
 __pycache__/*
 /config.json
 /.superpowers/
+/.venv/
+/pytest_cache/
+/.pytest_cache/
