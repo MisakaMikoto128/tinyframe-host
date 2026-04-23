@@ -28,12 +28,13 @@ class ConfigManager:
         try:
             with open(self._path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
+            _default = AppConfig()
             return AppConfig(
-                device_name=data.get("device_name", "REG1K0100A2 充电模块"),
-                voltage_max=float(data.get("voltage_max", 1000.0)),
-                voltage_min=float(data.get("voltage_min", 150.0)),
-                current_max=float(data.get("current_max", 100.0)),
-                current_min=float(data.get("current_min", 0.0)),
+                device_name=data.get("device_name", _default.device_name),
+                voltage_max=float(data.get("voltage_max", _default.voltage_max)),
+                voltage_min=float(data.get("voltage_min", _default.voltage_min)),
+                current_max=float(data.get("current_max", _default.current_max)),
+                current_min=float(data.get("current_min", _default.current_min)),
             )
-        except Exception:
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
             return AppConfig()
