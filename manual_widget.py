@@ -299,16 +299,96 @@ class ManualWidget(QFrame):
         return _ADDR_VALUES[idx] if idx < len(_ADDR_VALUES) else 0x00
 
     def _send_command(self, cmd_code: int):
-        pass  # Task 7 中实现
+        if cmd_code == 0x0F:
+            self._open_0F_dialog()
+            return
+
+        dst = self._get_target_addr(cmd_code)
+        w = self._row_widgets.get(cmd_code, {})
+
+        READ_DISPATCH = {
+            0x01: lambda: reg.REGx_ReadSystemVoltCurrFloat(dst),
+            0x02: lambda: reg.REGx_ReadModuleCount(dst),
+            0x03: lambda: reg.REGx_ReadModuleVoltCurrFloat(dst),
+            0x04: lambda: reg.REGx_ReadStateRequest(dst),
+            0x06: lambda: reg.REGx_ReadInputRequest(dst),
+            0x08: lambda: reg.REGx_ReadSystemVoltCurrFixed(dst),
+            0x09: lambda: reg.REGx_ReadOutputRequest(dst),
+            0x0A: lambda: reg.REGx_ReadModuleParams(dst),
+            0x0B: lambda: reg.REGx_ReadBarcode(dst),
+            0x0C: lambda: reg.REGx_ReadExternalVoltCurr(dst),
+        }
+        if cmd_code in READ_DISPATCH:
+            READ_DISPATCH[cmd_code]()
+            return
+
+        if cmd_code == 0x13:
+            reg.REGx_SetWalkIn(dst, w['enable'].currentIndex() == 0)
+        elif cmd_code == 0x14:
+            reg.REGx_SetGreenLED(dst, w['blink'].currentIndex() == 0)
+        elif cmd_code == 0x16:
+            reg.REGx_SetGroupNumber(dst, w['group'].value())
+        elif cmd_code == 0x19:
+            reg.REGx_SetSleep(dst, w['sleep'].currentIndex() == 0)
+        elif cmd_code == 0x1A:
+            if w['power'].currentIndex() == 0:
+                reg.REGx_Launch(dst)
+            else:
+                reg.REGx_CloseOutput(dst)
+        elif cmd_code == 0x1B:
+            reg.REGx_SetSystemOutput(dst, w['volt'].value(), w['curr'].value())
+        elif cmd_code == 0x1C:
+            reg.REGx_SetOutput(dst, w['volt'].value(), w['curr'].value())
+        elif cmd_code == 0x1F:
+            reg.REGx_SetAddressMode(dst, w['mode'].currentIndex() == 1)
 
     def _read_all(self):
-        pass  # Task 7 中实现
+        dst = self._get_target_addr(0x01)
+        read_cmds = [0x01, 0x02, 0x03, 0x04, 0x06, 0x08, 0x09, 0x0A, 0x0B, 0x0C]
+        for cmd_code in read_cmds:
+            self._send_command(cmd_code)
+            time.sleep(0.05)
 
     def _refresh_responses(self):
-        pass  # 暂时空实现，避免定时器报错
+        for cmd_code, formatter in RESPONSE_FORMATTERS.items():
+            lbl = self._response_labels.get(cmd_code)
+            if lbl is None:
+                continue
+            try:
+                text = formatter(self._ci)
+                lbl.setText(text)
+            except Exception:
+                pass
 
     def _append_log(self, direction: str, identifier: int, data: bytes, desc: str):
-        pass  # 暂时空实现
+        id_str = (f"{identifier >> 24 & 0xFF:02X} {identifier >> 16 & 0xFF:02X} "
+                  f"{identifier >> 8 & 0xFF:02X} {identifier & 0xFF:02X}")
+        data_str = ' '.join(f'{b:02X}' for b in data)
+        if direction == 'TX':
+            color = '#89b4fa'
+            arrow = '⬆ TX'
+        else:
+            color = '#a6e3a1'
+            arrow = '⬇ RX'
+        line = (f'<span style="color:{color}">{arrow}</span> '
+                f'<span style="color:#585b70">{id_str}</span>&nbsp;&nbsp;'
+                f'<span style="color:#cdd6f4">{data_str}</span>')
+        if desc:
+            line += f'&nbsp;&nbsp;<span style="color:#6c7086">{desc}</span>'
+        self._log_text.append(line)
+        # 限制最多 200 行，避免内存无限增长
+        doc = self._log_text.document()
+        if doc.blockCount() > 200:
+            from PyQt5.QtGui import QTextCursor
+            cursor = self._log_text.textCursor()
+            cursor.movePosition(QTextCursor.Start)
+            cursor.select(QTextCursor.BlockUnderCursor)
+            cursor.removeSelectedText()
+            cursor.deleteChar()
+        self._log_text.scrollToBottom()
 
     def _clear_log(self):
         self._log_text.clear()
+
+    def _open_0F_dialog(self):
+        pass  # Task 8 中实现
