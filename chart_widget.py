@@ -1,68 +1,61 @@
+"""
+实时双Y轴折线/面积组合图
+  左轴：电压(V) + 电流(A)  ← 分别归一化后共享同一显示区域
+  右轴：功率(W)             ← 独立刻度，面积填充
+"""
 from collections import deque
 
-from PyQt5.QtCore import Qt, QRect, QRectF
-from PyQt5.QtGui import QColor, QFont, QPainter, QPainterPath, QPen
+from PyQt5.QtCore import Qt, QRect, QRectF, QPointF
+from PyQt5.QtGui import (QColor, QFont, QLinearGradient, QPainter,
+                          QPainterPath, QPen, QBrush)
 from PyQt5.QtWidgets import (QFrame, QHBoxLayout, QLabel, QSizePolicy,
                               QVBoxLayout, QWidget)
-from qfluentwidgets import (CaptionLabel, CheckBox, StrongBodyLabel,
-                             isDarkTheme)
+from qfluentwidgets import CaptionLabel, CheckBox, StrongBodyLabel, isDarkTheme
 
-# ─── 曲线配色（Catppuccin Mocha）──────────────────────────────
-_VOLT_HEX  = '#60a5fa'   # 蓝
-_CURR_HEX  = '#4ade80'   # 绿
-_PWR_HEX   = '#fb923c'   # 橙
+# ─── 配色（Catppuccin Mocha × Fluent）─────────────────────────
+_VOLT_HEX = '#60a5fa'   # 蓝
+_CURR_HEX = '#c084fc'   # 紫
+_PWR_HEX  = '#fb923c'   # 橙
 
 
-class _LegendItem(QWidget):
-    """彩色线段指示 + CheckBox 的图例条目。"""
-
-    def __init__(self, label: str, color_hex: str, parent=None):
-        super().__init__(parent)
-        h = QHBoxLayout(self)
-        h.setContentsMargins(0, 0, 0, 0)
-        h.setSpacing(6)
-
-        dot = QLabel()
-        dot.setFixedSize(18, 3)
-        dot.setStyleSheet(f'background:{color_hex};border-radius:1px;')
-
-        self._cb = CheckBox(label)
-        self._cb.setChecked(True)
-
-        h.addWidget(dot)
-        h.addWidget(self._cb)
-
-    @property
-    def checked(self) -> bool:
-        return self._cb.isChecked()
-
-    def set_value_text(self, text: str):
-        self._cb.setText(text)
-
-    def connect_toggle(self, slot):
-        self._cb.stateChanged.connect(slot)
+def _fmt_y(val: float, unit: str) -> str:
+    """格式化 Y 轴刻度标签。"""
+    if unit == 'W' and val >= 1000:
+        return f'{val/1000:.0f}k'
+    if val == int(val):
+        return str(int(val))
+    return f'{val:.1f}'
 
 
 class _ChartCanvas(QWidget):
-    """实时折线图绘制区域。"""
+    """
+    双Y轴实时绘图区：
+      - 左轴：电压 / 电流（各自归一化到自身最大值，共享 0-100% 高度）
+      - 右轴：功率（同样归一化，刻度独立标注）
+      - 功率绘为渐变面积 + 轮廓线
+      - 电压 / 电流绘为折线
+    """
 
-    _GRID_ROWS = 4       # 水平网格格数（5条线）
-    _Y_LABELS  = ['0%', '25%', '50%', '75%', '100%']
-    _LM, _RM, _TM, _BM = 38, 10, 10, 26   # 边距
+    _LM  = 52   # 左边距（左Y轴刻度）
+    _RM  = 52   # 右边距（右Y轴刻度）
+    _TM  = 14
+    _BM  = 30   # 下边距（X轴时间标注）
+    _TICKS = 4  # 网格格数（5条线）
 
     def __init__(self, chart: 'RealtimeChart', parent=None):
         super().__init__(parent)
         self._c = chart
-        self.setMinimumHeight(160)
+        self.setMinimumHeight(180)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-    # ── 绘制 ──────────────────────────────────────────────────
-    def paintEvent(self, _event):
+    # ── 绘制入口 ─────────────────────────────────────────────
+    def paintEvent(self, _ev):
         dark = isDarkTheme()
-        bg      = QColor(28,  28,  45)  if dark else QColor(248, 248, 252)
-        grid_c  = QColor(55,  55,  80)  if dark else QColor(210, 210, 225)
-        label_c = QColor(120, 120, 160) if dark else QColor(130, 130, 160)
-        border_c= QColor(55,  55,  80)  if dark else QColor(200, 200, 215)
+        bg        = QColor(22,  22,  38)  if dark else QColor(247, 247, 252)
+        grid_c    = QColor(48,  48,  75)  if dark else QColor(215, 215, 230)
+        axis_l_c  = QColor(148, 186, 252) if dark else QColor( 59, 130, 246)  # 左轴标 蓝
+        axis_r_c  = QColor(253, 186, 116) if dark else QColor(234, 100,  10)  # 右轴标 橙
+        tick_c    = QColor(110, 110, 155) if dark else QColor(140, 140, 170)  # 时间标
 
         W, H = self.width(), self.height()
         lm, rm, tm, bm = self._LM, self._RM, self._TM, self._BM
@@ -70,82 +63,187 @@ class _ChartCanvas(QWidget):
         ph = H - tm - bm
         px, py = lm, tm
 
-        p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
 
-        # 背景 + 圆角边框
-        p.fillRect(self.rect(), bg)
-        p.setPen(QPen(border_c, 1))
-        p.drawRoundedRect(QRectF(.5, .5, W - 1, H - 1), 6, 6)
+        # ── 背景 + 圆角边框 ─────────────────────────────────
+        painter.fillRect(self.rect(), bg)
+        border = QColor(55, 55, 85) if dark else QColor(200, 200, 220)
+        painter.setPen(QPen(border, 1))
+        painter.drawRoundedRect(QRectF(.5, .5, W - 1, H - 1), 6, 6)
 
         font8 = QFont('Consolas', 8)
-        p.setFont(font8)
-
-        # 水平网格 + Y 标
-        for i in range(self._GRID_ROWS + 1):
-            frac = i / self._GRID_ROWS
-            y = int(py + ph * (1.0 - frac))
-            p.setPen(QPen(grid_c, 1, Qt.DashLine))
-            p.drawLine(px, y, px + pw, y)
-            p.setPen(label_c)
-            p.drawText(0, y - 7, lm - 4, 14,
-                       Qt.AlignRight | Qt.AlignVCenter,
-                       self._Y_LABELS[i])
-
-        # X 轴时间标注
-        ws = self._c.WINDOW_SECONDS
-        for frac, lbl in [(0.0, f'-{ws}s'), (0.5, f'-{ws//2}s'), (1.0, '  0s')]:
-            x = px + int(frac * pw)
-            p.setPen(label_c)
-            p.drawText(x - 22, py + ph + 4, 44, 20, Qt.AlignCenter, lbl)
-
-        # 剪裁到绘图区
-        p.setClipRect(QRect(px, py, pw, ph))
+        painter.setFont(font8)
 
         c = self._c
-        series = [
-            (c._volt_data, c._show_volt, _VOLT_HEX, c._volt_max),
-            (c._curr_data, c._show_curr, _CURR_HEX, c._curr_max),
-            (c._pwr_data,  c._show_pwr,  _PWR_HEX,  c._pwr_max),
-        ]
 
-        for data, visible, color_hex, y_max in series:
-            if not visible or len(data) < 2:
-                continue
-            pts = list(data)
-            n   = len(pts)
+        # ── 水平网格 + 左/右Y轴刻度 ─────────────────────────
+        for i in range(self._TICKS + 1):
+            frac = i / self._TICKS
+            y = int(py + ph * (1.0 - frac))
+
+            # 网格线
+            painter.setPen(QPen(grid_c, 1, Qt.DashLine))
+            painter.drawLine(px, y, px + pw, y)
+
+            # 左轴标（电压）
+            v_lbl = _fmt_y(c._volt_max * frac, 'V') + 'V'
+            painter.setPen(axis_l_c)
+            painter.drawText(0, y - 7, lm - 5, 14,
+                             Qt.AlignRight | Qt.AlignVCenter, v_lbl)
+
+            # 右轴标（功率）
+            p_lbl = _fmt_y(c._pwr_max * frac, 'W') + ('W' if c._pwr_max < 1000 else '')
+            painter.setPen(axis_r_c)
+            painter.drawText(W - rm + 4, y - 7, rm - 4, 14,
+                             Qt.AlignLeft | Qt.AlignVCenter, p_lbl)
+
+        # ── X轴时间标注 ──────────────────────────────────────
+        ws = c.WINDOW_SECONDS
+        for frac, lbl in [(0.0, f'-{ws}s'), (0.5, f'-{ws//2}s'), (1.0, '0s')]:
+            x = px + int(frac * pw)
+            painter.setPen(tick_c)
+            painter.drawText(x - 22, py + ph + 5, 44, 20,
+                             Qt.AlignCenter, lbl)
+
+        # ── 轴单位标注 ────────────────────────────────────────
+        font9b = QFont('Microsoft YaHei', 8)
+        font9b.setBold(True)
+        painter.setFont(font9b)
+        painter.setPen(axis_l_c)
+        painter.drawText(0, tm - 2, lm, 14, Qt.AlignCenter, 'V / A')
+        painter.setPen(axis_r_c)
+        painter.drawText(W - rm, tm - 2, rm, 14, Qt.AlignCenter, 'W')
+        painter.setFont(font8)
+
+        # ── 剪裁到绘图区 ─────────────────────────────────────
+        painter.setClipRect(QRect(px, py, pw, ph))
+
+        # ── 功率：渐变面积填充 + 轮廓线 ─────────────────────
+        if c._show_pwr and len(c._pwr_data) >= 2:
+            pts_pwr = list(c._pwr_data)
+            path_fill = QPainterPath()
+            path_line = QPainterPath()
+            n   = len(pts_pwr)
             cap = c._max_points
-
-            path = QPainterPath()
             first = True
-            for j, val in enumerate(pts):
+            x0 = y_base = 0
+            for j, val in enumerate(pts_pwr):
                 xf = (cap - n + j) / max(cap - 1, 1)
-                yf = min(val / y_max, 1.0) if y_max > 0 else 0.0
+                yf = min(val / c._pwr_max, 1.0) if c._pwr_max > 0 else 0.0
                 xp = px + xf * pw
                 yp = py + ph * (1.0 - yf)
                 if first:
-                    path.moveTo(xp, yp)
+                    path_fill.moveTo(xp, py + ph)   # 起点在底部
+                    path_fill.lineTo(xp, yp)
+                    path_line.moveTo(xp, yp)
+                    x0 = xp
                     first = False
                 else:
-                    path.lineTo(xp, yp)
+                    path_fill.lineTo(xp, yp)
+                    path_line.lineTo(xp, yp)
+                x_last = xp
 
-            p.setPen(QPen(QColor(color_hex), 2,
-                          Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-            p.setBrush(Qt.NoBrush)
-            p.drawPath(path)
+            path_fill.lineTo(x_last, py + ph)    # 终点回到底部
+            path_fill.closeSubpath()
 
-        p.end()
+            # 渐变填充
+            grad = QLinearGradient(QPointF(0, py), QPointF(0, py + ph))
+            grad.setColorAt(0.0, QColor(251, 146, 60, 130))
+            grad.setColorAt(1.0, QColor(251, 146, 60,  15))
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QBrush(grad))
+            painter.drawPath(path_fill)
+
+            # 轮廓线
+            painter.setPen(QPen(QColor(_PWR_HEX), 2,
+                                Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+            painter.setBrush(Qt.NoBrush)
+            painter.drawPath(path_line)
+
+        # ── 电压折线 ─────────────────────────────────────────
+        self._draw_line(painter, c._volt_data, c._show_volt,
+                        _VOLT_HEX, c._volt_max, px, py, pw, ph, c._max_points)
+
+        # ── 电流折线 ─────────────────────────────────────────
+        self._draw_line(painter, c._curr_data, c._show_curr,
+                        _CURR_HEX, c._curr_max, px, py, pw, ph, c._max_points)
+
+        painter.end()
+
+    # ── 辅助：绘制普通折线 ───────────────────────────────────
+    @staticmethod
+    def _draw_line(p: QPainter, data, visible: bool, color_hex: str,
+                   y_max: float, px, py, pw, ph, cap):
+        if not visible or len(data) < 2:
+            return
+        pts = list(data)
+        n   = len(pts)
+        path = QPainterPath()
+        first = True
+        for j, val in enumerate(pts):
+            xf = (cap - n + j) / max(cap - 1, 1)
+            yf = min(val / y_max, 1.0) if y_max > 0 else 0.0
+            xp = px + xf * pw
+            yp = py + ph * (1.0 - yf)
+            if first:
+                path.moveTo(xp, yp)
+                first = False
+            else:
+                path.lineTo(xp, yp)
+        p.setPen(QPen(QColor(color_hex), 2,
+                      Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        p.setBrush(Qt.NoBrush)
+        p.drawPath(path)
+
+
+class _LegendItem(QWidget):
+    """彩色线段指示符 + CheckBox + 当前值。"""
+
+    def __init__(self, label: str, axis_tag: str, color_hex: str,
+                 is_area: bool = False, parent=None):
+        super().__init__(parent)
+        h = QHBoxLayout(self)
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(6)
+
+        # 颜色指示：面积用矩形块，线条用细线
+        indicator = QLabel()
+        if is_area:
+            indicator.setFixedSize(14, 10)
+            indicator.setStyleSheet(
+                f'background:{color_hex};border-radius:2px;opacity:0.8;')
+        else:
+            indicator.setFixedSize(18, 3)
+            indicator.setStyleSheet(
+                f'background:{color_hex};border-radius:1px;')
+
+        self._cb = CheckBox(f'{label} {axis_tag}')
+        self._cb.setChecked(True)
+
+        h.addWidget(indicator)
+        h.addWidget(self._cb)
+
+    @property
+    def checked(self) -> bool:
+        return self._cb.isChecked()
+
+    def set_value(self, text: str):
+        base = self._cb.text().split('  ')[0]
+        self._cb.setText(f'{base}  {text}')
+
+    def connect_toggle(self, slot):
+        self._cb.stateChanged.connect(slot)
 
 
 class RealtimeChart(QFrame):
-    """实时电压/电流/功率折线图。
-
-    调用 push(volt, curr, power) 追加数据点；图表只保留最近
-    WINDOW_SECONDS 秒的数据，不可缩放。
+    """
+    双Y轴实时曲线图。
+      push(volt, curr, power) 追加数据；固定 WINDOW_SECONDS 时间窗口。
     """
 
     WINDOW_SECONDS = 60
-    _PUSH_MS = 150   # 外部 push 间隔（与 updateTableWidget 定时器一致）
+    _PUSH_MS = 150
 
     def __init__(self, volt_max=1000.0, curr_max=100.0, pwr_max=30000.0,
                  parent=None):
@@ -155,27 +253,26 @@ class RealtimeChart(QFrame):
         self._volt_data  = deque(maxlen=cap)
         self._curr_data  = deque(maxlen=cap)
         self._pwr_data   = deque(maxlen=cap)
-        self._volt_max   = volt_max  if volt_max  > 0 else 1000.0
-        self._curr_max   = curr_max  if curr_max  > 0 else 100.0
-        self._pwr_max    = pwr_max   if pwr_max   > 0 else 30000.0
+        self._volt_max   = float(volt_max) if volt_max  > 0 else 1000.0
+        self._curr_max   = float(curr_max) if curr_max  > 0 else 100.0
+        self._pwr_max    = float(pwr_max)  if pwr_max   > 0 else 30000.0
         self._show_volt  = True
         self._show_curr  = True
         self._show_pwr   = True
         self.setFrameShape(QFrame.NoFrame)
         self._build_ui()
 
-    # ── 公共接口 ──────────────────────────────────────────────
+    # ── 公共接口 ─────────────────────────────────────────────
     def push(self, volt: float, curr: float, power: float):
-        """追加一个数据点并刷新图表。"""
         self._volt_data.append(float(volt))
         self._curr_data.append(float(curr))
         self._pwr_data.append(float(power))
         self._canvas.update()
-        self._volt_item.set_value_text(f'电压  {volt:.1f} V')
-        self._curr_item.set_value_text(f'电流  {curr:.2f} A')
-        self._pwr_item.set_value_text(f'功率  {power:.0f} W')
+        self._volt_leg.set_value(f'{volt:.1f} V')
+        self._curr_leg.set_value(f'{curr:.2f} A')
+        self._pwr_leg.set_value(f'{power:.0f} W')
 
-    # ── 构建 UI ───────────────────────────────────────────────
+    # ── 构建 UI ──────────────────────────────────────────────
     def _build_ui(self):
         vbox = QVBoxLayout(self)
         vbox.setContentsMargins(10, 8, 10, 8)
@@ -183,30 +280,28 @@ class RealtimeChart(QFrame):
 
         # 标题行
         hdr = QHBoxLayout()
-        hdr.setSpacing(8)
-        title = StrongBodyLabel('实时曲线')
-        hdr.addWidget(title)
+        hdr.addWidget(StrongBodyLabel('实时曲线'))
         hdr.addStretch()
         hdr.addWidget(CaptionLabel(f'时间窗口 {self.WINDOW_SECONDS} s'))
         vbox.addLayout(hdr)
 
         # 图例行
-        self._volt_item = _LegendItem('电压  — V',   _VOLT_HEX)
-        self._curr_item = _LegendItem('电流  — A',   _CURR_HEX)
-        self._pwr_item  = _LegendItem('功率  — W',   _PWR_HEX)
+        self._volt_leg = _LegendItem('电压', '（左轴）', _VOLT_HEX, is_area=False)
+        self._curr_leg = _LegendItem('电流', '（左轴）', _CURR_HEX, is_area=False)
+        self._pwr_leg  = _LegendItem('功率', '（右轴）', _PWR_HEX,  is_area=True)
 
-        self._volt_item.connect_toggle(
+        self._volt_leg.connect_toggle(
             lambda s: self._toggle('volt', s == Qt.Checked))
-        self._curr_item.connect_toggle(
+        self._curr_leg.connect_toggle(
             lambda s: self._toggle('curr', s == Qt.Checked))
-        self._pwr_item.connect_toggle(
+        self._pwr_leg.connect_toggle(
             lambda s: self._toggle('pwr',  s == Qt.Checked))
 
         legend = QHBoxLayout()
         legend.setSpacing(20)
-        legend.addWidget(self._volt_item)
-        legend.addWidget(self._curr_item)
-        legend.addWidget(self._pwr_item)
+        legend.addWidget(self._volt_leg)
+        legend.addWidget(self._curr_leg)
+        legend.addWidget(self._pwr_leg)
         legend.addStretch()
         vbox.addLayout(legend)
 
