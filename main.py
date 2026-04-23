@@ -1,6 +1,5 @@
 import sys
 from config_manager import ConfigManager, AppConfig
-from manual_widget import ManualWidget
 import time
 
 from PyQt5.QtCore import QTimer
@@ -20,6 +19,7 @@ from BMSDataType import *
 from FluentQtTest import Ui_Form
 from HDL_CAN import CANDev
 from REG1K0100A2 import *
+from manual_widget import ManualWidget
 
 
 
@@ -327,7 +327,7 @@ class Window(FluentWindow):
         self.initWindow()
 
     def initNavigation(self):
-        self.addSubInterface(self.homeInterface, FIF.HOME, 'Home')
+        self.addSubInterface(self.homeInterface, FIF.HOME, '主页')
         self.addSubInterface(self.manualInterface, FIF.EDIT, '手动操作')
         # self.addSubInterface(self.musicInterface, FIF.MUSIC, 'Music library')
         # self.addSubInterface(self.videoInterface, FIF.VIDEO, 'Video library')

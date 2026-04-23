@@ -387,6 +387,10 @@ class ManualWidget(QFrame):
     def _clear_log(self):
         self._log_text.clear()
 
+    def closeEvent(self, event):
+        self._refresh_timer.stop()
+        event.accept()
+
     def _open_0F_dialog(self):
         dlg = QDialog(self)
         dlg.setWindowTitle('综合设置 (0x0F)')
