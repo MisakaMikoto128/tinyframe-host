@@ -1,6 +1,6 @@
 import time
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QFont, QColor
+from PyQt5.QtGui import QFont, QColor, QTextCursor
 from PyQt5.QtWidgets import (
     QFrame, QVBoxLayout, QHBoxLayout, QWidget, QLabel,
     QTableWidgetItem, QHeaderView, QDoubleSpinBox, QSpinBox,
@@ -343,11 +343,9 @@ class ManualWidget(QFrame):
             reg.REGx_SetAddressMode(dst, w['mode'].currentIndex() == 1)
 
     def _read_all(self):
-        dst = self._get_target_addr(0x01)
         read_cmds = [0x01, 0x02, 0x03, 0x04, 0x06, 0x08, 0x09, 0x0A, 0x0B, 0x0C]
-        for cmd_code in read_cmds:
-            self._send_command(cmd_code)
-            time.sleep(0.05)
+        for i, cmd_code in enumerate(read_cmds):
+            QTimer.singleShot(i * 50, lambda c=cmd_code: self._send_command(c))
 
     def _refresh_responses(self):
         for cmd_code, formatter in RESPONSE_FORMATTERS.items():
@@ -358,7 +356,7 @@ class ManualWidget(QFrame):
                 text = formatter(self._ci)
                 lbl.setText(text)
             except Exception:
-                pass
+                pass  # 格式化器异常不应中断刷新循环
 
     def _append_log(self, direction: str, identifier: int, data: bytes, desc: str):
         id_str = (f"{identifier >> 24 & 0xFF:02X} {identifier >> 16 & 0xFF:02X} "
@@ -379,7 +377,6 @@ class ManualWidget(QFrame):
         # 限制最多 200 行，避免内存无限增长
         doc = self._log_text.document()
         if doc.blockCount() > 200:
-            from PyQt5.QtGui import QTextCursor
             cursor = self._log_text.textCursor()
             cursor.movePosition(QTextCursor.Start)
             cursor.select(QTextCursor.BlockUnderCursor)
