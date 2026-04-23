@@ -1,5 +1,6 @@
 import sys
 from config_manager import ConfigManager, AppConfig
+from manual_widget import ManualWidget
 import time
 
 from PyQt5.QtCore import QTimer
@@ -306,6 +307,12 @@ class Window(FluentWindow):
 
         # create sub interface
         self.homeInterface = MainWindow(config=self._config, parent=self)
+        self.manualInterface = ManualWidget(
+            can_device=self.homeInterface.can_device,
+            canController_info=self.homeInterface.canController_info,
+            config=self._config,
+            parent=self,
+        )
         # self.musicInterface = Widget('Music Interface', self)
         # self.videoInterface = Widget('Video Interface', self)
         # self.folderInterface = Widget('Folder Interface', self)
@@ -321,6 +328,7 @@ class Window(FluentWindow):
 
     def initNavigation(self):
         self.addSubInterface(self.homeInterface, FIF.HOME, 'Home')
+        self.addSubInterface(self.manualInterface, FIF.EDIT, '手动操作')
         # self.addSubInterface(self.musicInterface, FIF.MUSIC, 'Music library')
         # self.addSubInterface(self.videoInterface, FIF.VIDEO, 'Video library')
 
