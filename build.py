@@ -233,6 +233,7 @@ def build(mode: str):
         sys.executable, '-m', 'nuitka',
 
         '--assume-yes-for-downloads',
+        '--follow-imports',
         f'--output-dir={BUILD_CACHE}',
         f'--jobs={cpu_cores}',
 
@@ -258,8 +259,9 @@ def build(mode: str):
 
         # ── General size optimisations ────────────────────────
         '--python-flag=no_site',
+        '--python-flag=-OO',        # strip docstrings, optimise bytecode
 
-        # Exclude heavy dev/test packages entirely
+        # Exclude heavy dev/test frameworks (anti-bloat plugin mode flags)
         '--noinclude-pytest-mode=nofollow',
         '--noinclude-unittest-mode=nofollow',
         '--noinclude-setuptools-mode=nofollow',
@@ -268,7 +270,15 @@ def build(mode: str):
         '--noinclude-numba-mode=nofollow',
         '--noinclude-pydoc-mode=nofollow',
 
-        # Exclude unused Qt / Python modules
+        # Exclude unused Python packages (not used by this project)
+        '--nofollow-import-to=setuptools,pip,wheel',
+        '--nofollow-import-to=pytest,docutils,unittest',
+        '--nofollow-import-to=matplotlib,scipy,pandas,openpyxl',
+        '--nofollow-import-to=numba,llvmlite',
+        '--nofollow-import-to=pyqtgraph,OpenGL',
+        '--nofollow-import-to=numpy',      # project uses no numpy at all
+
+        # Exclude unused Qt sub-modules (not imported by app or qfluentwidgets)
         '--nofollow-import-to=PyQt5.Qt3DAnimation',
         '--nofollow-import-to=PyQt5.Qt3DCore',
         '--nofollow-import-to=PyQt5.Qt3DExtras',
@@ -298,8 +308,11 @@ def build(mode: str):
         '--nofollow-import-to=PyQt5.QtWebEngineWidgets',
         '--nofollow-import-to=PyQt5.QtWebSockets',
         '--nofollow-import-to=PyQt5.QtXmlPatterns',
-        '--nofollow-import-to=numpy.testing',
-        '--nofollow-import-to=numpy.tests',
+
+        # Wildcard: exclude all test submodules in any package
+        '--nofollow-import-to=*.tests',
+        '--nofollow-import-to=*.test',
+        '--nofollow-import-to=*.testing',
 
         # ── Required packages ─────────────────────────────────
         # qfluentwidgets ships Python resource files (icons, QSS) — include all
