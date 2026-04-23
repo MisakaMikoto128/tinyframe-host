@@ -1,14 +1,15 @@
 import time
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QFont, QColor, QTextCursor
+from PyQt5.QtGui import QFont, QColor, QTextCursor, QPainter
 from PyQt5.QtWidgets import (
     QFrame, QVBoxLayout, QHBoxLayout, QWidget, QLabel,
     QTableWidgetItem, QHeaderView, QDoubleSpinBox, QSpinBox,
-    QComboBox, QTextEdit, QDialog, QFormLayout,
-    QDialogButtonBox
+    QComboBox, QDialog, QFormLayout,
+    QDialogButtonBox, QSplitter, QStyledItemDelegate
 )
 from qfluentwidgets import (
-    TableWidget, PushButton, ComboBox, SubtitleLabel, CaptionLabel, setFont
+    TableWidget, PushButton, ComboBox, SubtitleLabel, CaptionLabel, setFont,
+    TextEdit
 )
 from config_manager import AppConfig
 import REG1K0100A2 as reg
@@ -70,6 +71,32 @@ RESPONSE_FORMATTERS = {
 _ADDR_VALUES = list(range(16)) + [0x3F]
 
 
+class TypeBadgeDelegate(QStyledItemDelegate):
+    """为类型列绘制圆角徽章，跟随列宽实时更新（避免 setCellWidget 延迟刷新问题）。"""
+
+    _COLORS = {
+        '读': ('#1a3a5c', '#89dceb'),
+        '设': ('#3d1a1a', '#f38ba8'),
+    }
+
+    def paint(self, painter, option, index):
+        text = index.data(Qt.DisplayRole) or ''
+        bg_hex, fg_hex = self._COLORS.get(text, ('#313244', '#cdd6f4'))
+
+        painter.save()
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        badge = option.rect.adjusted(8, 5, -8, -5)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(bg_hex))
+        painter.drawRoundedRect(badge, 4, 4)
+
+        painter.setPen(QColor(fg_hex))
+        painter.setFont(QFont('Microsoft YaHei', 9))
+        painter.drawText(badge, Qt.AlignCenter, text)
+        painter.restore()
+
+
 class ManualWidget(QFrame):
 
     OBJECT_NAME = 'ManualInterface'
@@ -100,8 +127,13 @@ class ManualWidget(QFrame):
         layout.addWidget(title)
 
         layout.addWidget(self._build_toolbar())
-        layout.addWidget(self._build_table(), stretch=1)
-        layout.addWidget(self._build_log())
+
+        splitter = QSplitter(Qt.Vertical, self)
+        splitter.addWidget(self._build_table())
+        splitter.addWidget(self._build_log())
+        splitter.setSizes([500, 120])
+        splitter.setChildrenCollapsible(False)
+        layout.addWidget(splitter, stretch=1)
 
     def _build_toolbar(self) -> QWidget:
         bar = QWidget(self)
@@ -149,6 +181,7 @@ class ManualWidget(QFrame):
         self._table.setColumnWidth(1, 52)
         self._table.setColumnWidth(3, 220)
         self._table.setColumnWidth(5, 72)
+        self._table.setItemDelegateForColumn(1, TypeBadgeDelegate(self._table))
 
         for i, cmd_def in enumerate(COMMANDS):
             cmd_code = cmd_def['cmd']
@@ -160,17 +193,10 @@ class ManualWidget(QFrame):
             item.setTextAlignment(Qt.AlignCenter)
             self._table.setItem(i, 0, item)
 
-            # 列1: 类型标签
-            type_lbl = QLabel('读' if cmd_def['type'] == 'R' else '设', self._table)
-            type_lbl.setAlignment(Qt.AlignCenter)
-            type_lbl.setFont(QFont('Microsoft YaHei', 9))
-            if cmd_def['type'] == 'R':
-                type_lbl.setStyleSheet(
-                    'QLabel{background:#1a3a5c;color:#89dceb;border-radius:4px;padding:2px 6px}')
-            else:
-                type_lbl.setStyleSheet(
-                    'QLabel{background:#3d1a1a;color:#f38ba8;border-radius:4px;padding:2px 6px}')
-            self._table.setCellWidget(i, 1, type_lbl)
+            # 列1: 类型（由 TypeBadgeDelegate 绘制，跟随列宽实时更新）
+            type_item = QTableWidgetItem('读' if cmd_def['type'] == 'R' else '设')
+            type_item.setTextAlignment(Qt.AlignCenter)
+            self._table.setItem(i, 1, type_item)
 
             # 列2: 说明
             desc_item = QTableWidgetItem(cmd_def['desc'])
@@ -280,12 +306,10 @@ class ManualWidget(QFrame):
         hh.addWidget(clear_btn)
         v.addWidget(header)
 
-        self._log_text = QTextEdit(frame)
+        self._log_text = TextEdit(frame)
         self._log_text.setReadOnly(True)
-        self._log_text.setFixedHeight(100)
+        self._log_text.setMinimumHeight(80)
         self._log_text.setFont(QFont('Consolas', 9))
-        self._log_text.setStyleSheet(
-            'QTextEdit{background:#181825;color:#cdd6f4;border:1px solid #313244;border-radius:4px}')
         v.addWidget(self._log_text)
 
         return frame
@@ -382,7 +406,7 @@ class ManualWidget(QFrame):
             cursor.select(QTextCursor.BlockUnderCursor)
             cursor.removeSelectedText()
             cursor.deleteChar()
-        self._log_text.moveCursor(QTextCursor.End)
+        self._log_text.scrollToBottom()
 
     def _clear_log(self):
         self._log_text.clear()
