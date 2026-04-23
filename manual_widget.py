@@ -239,6 +239,9 @@ class ManualWidget(QFrame):
                 w.setFixedWidth(72)
                 h.addWidget(w)
                 self._row_widgets[cmd_code][p['key']] = w
+            else:
+                raise ValueError(
+                    f"_build_param_widget: 未知参数类型 {p['type']!r}，cmd=0x{cmd_code:02X}")
 
         h.addStretch()
         return container
@@ -289,13 +292,17 @@ class ManualWidget(QFrame):
 
     # ─── 占位方法（Task 7 & 8 实现）─────────────────────────
     def _get_target_addr(self, cmd_code: int) -> int:
-        raise NotImplementedError
+        cmd_def = next((c for c in COMMANDS if c['cmd'] == cmd_code), None)
+        if cmd_def and cmd_def.get('addr_lock') is not None:
+            return cmd_def['addr_lock']
+        idx = self.addrCombo.currentIndex()
+        return _ADDR_VALUES[idx] if idx < len(_ADDR_VALUES) else 0x00
 
     def _send_command(self, cmd_code: int):
-        raise NotImplementedError
+        pass  # Task 7 中实现
 
     def _read_all(self):
-        raise NotImplementedError
+        pass  # Task 7 中实现
 
     def _refresh_responses(self):
         pass  # 暂时空实现，避免定时器报错

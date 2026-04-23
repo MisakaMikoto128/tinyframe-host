@@ -401,7 +401,7 @@ def REGx_SetSleep(dstAddr, sleep: bool):
 
 def REGx_SetSystemOutput(dstAddr, volt: float, total_curr: float):
     volt = max(REGx_OUTPUT_DC_VOLT_MIN, min(volt, REGx_OUTPUT_DC_VOLT_MAX))
-    total_curr = max(REGx_OUTPUT_DC_CURR_MIN, min(total_curr, REGx_OUTPUT_DC_CURR_MAX))
+    total_curr = max(0.0, total_curr)  # 系统总电流不设上限（多模块并联可超过单模块最大值）
     request = REGx_Msg_t()
     request.errorCode = REGx_ERROR_CODE.NORMAL
     request.deviceCode = REGx_DEVICE_CODE.SINGLE
