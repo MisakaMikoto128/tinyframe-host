@@ -1,3 +1,4 @@
+import struct
 import HDL_CAN
 
 REGx_INPUT_AC_VOLT_MAX = 530  # Unit: V
@@ -40,8 +41,28 @@ class CANControllerInfo:
 
     Temperature = 0
 
+    # 0x01 / 0x08 系统电压电流
+    SystemVolt = 0.0
+    SystemCurr = 0.0
+    # 0x02 模块数量
+    ModuleCount = 0
+    # 0x03 模块电压电流（浮点）
+    ModuleVoltFloat = 0.0
+    ModuleCurrFloat = 0.0
+    # 0x0A 模块参数
+    ParamVoltMax = 0.0
+    ParamVoltMin = 0.0
+    ParamCurrMax = 0.0
+    ParamPower = 0.0
+    # 0x0B 条码
+    Barcode = ""
+    # 0x0C 外部电压/允许电流
+    ExternalVolt = 0.0
+    AllowedCurr = 0.0
+
 
 g_candevice = None
+g_log_callback = None  # 由 ManualWidget 注册，签名: (direction: str, identifier: int, data: bytes, desc: str)
 def REGx_Init(can_device):
     global g_candevice
     g_candevice = can_device
@@ -93,6 +114,8 @@ def REGx_MsgSend(msg):
     TxData[:] = msg.data[:]
     formatted_identifier = f"({Identifier >> 24:02X} {Identifier >> 16 & 0xFF:02X} {Identifier >> 8 & 0xFF:02X} {Identifier & 0xFF:02X})"
     print(f"==> Identifier: {formatted_identifier} TxData: {TxData}")
+    if g_log_callback:
+        g_log_callback('TX', Identifier, bytes(TxData), "")
     return g_candevice.send_data_ch1(Identifier, TxData)
 
 
@@ -259,6 +282,9 @@ def REGx_CAN_ReceviceCallback(can_msg,canController_info:CANControllerInfo):
 
     formatted_identifier = f"({Identifier >> 24:02X} {Identifier >> 16 & 0xFF:02X} {Identifier >> 8 & 0xFF:02X} {Identifier & 0xFF:02X})"
     print(f"<== Identifier: {formatted_identifier} TxData: {RxData}")
+
+    if g_log_callback:
+        g_log_callback('RX', Identifier, bytes(RxData), "")
 
     if (response.dstAddr == REGx_MASTER_ADDR or response.dstAddr == REGx_BROADCAST_ADDR):
         if (response.cmdCode == 0x04):
