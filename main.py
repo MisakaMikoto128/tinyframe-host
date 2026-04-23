@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QStandardItemModel, QColor
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction, QMenu, QSystemTrayIcon, QTableWidgetItem, QHeaderView, QWidget
-from PyQt5.QtWidgets import QApplication, QFrame, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QFrame, QHBoxLayout, QSplitter, QVBoxLayout
 from qfluentwidgets import FluentIcon as FIF, TableWidget, Theme, setTheme, SwitchButton, AvatarWidget, BodyLabel, \
     CaptionLabel, HyperlinkButton, isDarkTheme, FluentIcon, Action
 from qfluentwidgets import InfoLevel, setThemeColor
@@ -19,6 +19,7 @@ from BMSDataType import *
 from FluentQtTest import Ui_Form
 from HDL_CAN import CANDev
 from REG1K0100A2 import *
+from chart_widget import RealtimeChart
 from manual_widget import ManualWidget
 
 
@@ -56,6 +57,32 @@ class MainWindow(QFrame, Ui_Form):
 
         self.can_device = CANDev()  # Create an instance of your CAN device
         self.canController_info = CANControllerInfo()
+
+        # ── 实时曲线图：插入到"充电器状态"标题+表格的左侧 ────────
+        pwr_max = self._config.voltage_max * self._config.current_max
+        self.realtimeChart = RealtimeChart(
+            volt_max=self._config.voltage_max,
+            curr_max=self._config.current_max,
+            pwr_max=pwr_max,
+            parent=self,
+        )
+        # 把 TitleLabel_3 和 TableWidget_Charger 从 verticalLayout_2 移出，
+        # 放入右侧容器，与图表一起装进水平 Splitter
+        _right = QWidget(self)
+        _right_vl = QVBoxLayout(_right)
+        _right_vl.setContentsMargins(0, 0, 0, 0)
+        _right_vl.setSpacing(4)
+        _right_vl.addWidget(self.TitleLabel_3)
+        _right_vl.addWidget(self.TableWidget_Charger)
+
+        _splitter = QSplitter(Qt.Horizontal, self)
+        _splitter.setChildrenCollapsible(False)
+        _splitter.addWidget(self.realtimeChart)
+        _splitter.addWidget(_right)
+        _splitter.setSizes([480, 260])
+
+        # verticalLayout_2 现已为空，加入 Splitter
+        self.verticalLayout_2.addWidget(_splitter)
 
         # enable border
         self.TableWidget_Charger.setBorderVisible(True)
@@ -126,6 +153,11 @@ class MainWindow(QFrame, Ui_Form):
             self.SwitchButton_Charger.setChecked(False)
         else:
             self.SwitchButton_Charger.setChecked(True)
+        self.realtimeChart.push(
+            self.canController_info.DC_Output_Volt,
+            self.canController_info.DC_Output_Curr,
+            self.canController_info.DC_Output_Power,
+        )
 
 
     def checkForData(self):
