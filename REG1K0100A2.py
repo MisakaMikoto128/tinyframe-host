@@ -165,6 +165,8 @@ def REGx_ReadOutputRequest(dstAddr):
 
 
 
+# 注意：此函数与 REGx_ReadModuleParams 发送相同的 0x0A 命令（读取模块参数：最大电压/最小电压/最大电流/额定功率）
+# 保留此函数名以保持向后兼容性
 def REGx_ReadOutputSetRequest(dstAddr):
     request = REGx_Msg_t()
 
@@ -441,6 +443,7 @@ def REGx_CAN_ReceviceCallback(can_msg,canController_info:CANControllerInfo):
             canController_info.SystemVolt = struct.unpack('>f', bytes(response.data[0:4]))[0]
             canController_info.SystemCurr = struct.unpack('>f', bytes(response.data[4:8]))[0]
         elif response.cmdCode == 0x02:
+            # 协议定义：Byte0=0, Byte1=0, Byte2=模块数量（参见 2.4 节 0x02 回复格式）
             canController_info.ModuleCount = response.data[2]
         elif response.cmdCode == 0x03:
             canController_info.ModuleVoltFloat = struct.unpack('>f', bytes(response.data[0:4]))[0]
@@ -448,9 +451,11 @@ def REGx_CAN_ReceviceCallback(can_msg,canController_info:CANControllerInfo):
         elif response.cmdCode == 0x08:
             canController_info.SystemVolt = ((response.data[0] << 24) | (response.data[1] << 16) |
                                              (response.data[2] << 8) | response.data[3]) / 1000.0
+            # 协议保证电流值非负（无符号整数，单位 mA），直接除以 1000 转换为 A
             canController_info.SystemCurr = ((response.data[4] << 24) | (response.data[5] << 16) |
                                              (response.data[6] << 8) | response.data[7]) / 1000.0
         elif response.cmdCode == 0x0A:
+            # 0x0A 回复：电压单位 V（整数），电流单位 0.1A，功率单位 10W（参见协议 2.4 节）
             canController_info.ParamVoltMax = float((response.data[0] << 8) | response.data[1])
             canController_info.ParamVoltMin = float((response.data[2] << 8) | response.data[3])
             canController_info.ParamCurrMax = ((response.data[4] << 8) | response.data[5]) * 0.1
