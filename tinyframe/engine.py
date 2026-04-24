@@ -39,7 +39,7 @@ _FATAL_ERRORS = {
 
 
 class TinyFrameEngine(QObject):
-    connected = pyqtSignal(str)            # port_name
+    connected = pyqtSignal(str, int)       # port_name, baud_rate
     disconnected = pyqtSignal(str)         # reason
     frameReceived = pyqtSignal(object)     # TFFrame
     frameSent = pyqtSignal(object)         # TFFrame
@@ -80,7 +80,7 @@ class TinyFrameEngine(QObject):
         self._serial.setFlowControl(QSerialPort.NoFlowControl)
         ok = self._serial.open(QSerialPort.ReadWrite)
         if ok:
-            self.connected.emit(port_name)
+            self.connected.emit(port_name, baud)
         else:
             self.disconnected.emit(self._serial.errorString())
         return ok

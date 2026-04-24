@@ -146,9 +146,9 @@ class BusinessPage(QFrame):
         self._apply_enabled_state()
 
     # ---- 连接状态 ----
-    def _on_connected(self, port: str) -> None:
+    def _on_connected(self, port: str, baud: int) -> None:
         self._status_badge.setLevel(InfoLevel.SUCCESS)
-        self._status_text.setText(f"已连接 — {port} @ {self._config.default_baud}")
+        self._status_text.setText(f"已连接 — {port} @ {baud}")
         self._apply_enabled_state()
 
     def _on_disconnected(self, reason: str) -> None:

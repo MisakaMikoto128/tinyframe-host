@@ -86,9 +86,9 @@ class SerialPanel(QFrame):
         else:
             self._engine.close()
 
-    def _on_connected(self, port: str) -> None:
+    def _on_connected(self, port: str, baud: int) -> None:
         self._badge.setLevel(InfoLevel.SUCCESS)
-        self._status_label.setText(f"{port} @ {self._baud_cb.currentText()}")
+        self._status_label.setText(f"{port} @ {baud}")
         if not self._toggle.isChecked():
             self._toggle.blockSignals(True)
             self._toggle.setChecked(True)
