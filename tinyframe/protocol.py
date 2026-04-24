@@ -4,6 +4,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Optional
 
+import crcmod.predefined
+
+_crc16_modbus_fn = crcmod.predefined.mkPredefinedCrcFun("modbus")
+
+
+def crc16_modbus(data: bytes) -> int:
+    """CRC16 Modbus。空输入返回 0xFFFF（Modbus 初值）。"""
+    return _crc16_modbus_fn(data)
+
 
 @dataclass
 class TFFrame:
