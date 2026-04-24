@@ -94,8 +94,16 @@ class TinyFrameEngine(QObject):
         return self._serial.isOpen()
 
     @staticmethod
-    def list_ports() -> list[str]:
-        return [p.portName() for p in QSerialPortInfo.availablePorts()]
+    def list_ports() -> list[tuple[str, str]]:
+        """返回 [(port_name, description), ...]，按 port_name 排序。
+
+        description 在 Windows 上是驱动友好名（如 "USB-SERIAL CH340"）；
+        Linux/macOS 上可能为空字符串。
+        """
+        return sorted(
+            [(p.portName(), p.description()) for p in QSerialPortInfo.availablePorts()],
+            key=lambda x: x[0],
+        )
 
     # ---- 协议转发 ----
     def query(self, type_: int, data: bytes,
