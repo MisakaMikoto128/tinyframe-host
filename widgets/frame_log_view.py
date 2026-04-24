@@ -4,9 +4,10 @@ from __future__ import annotations
 import time
 from collections import deque
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QBrush, QColor, QFont
-from PyQt5.QtWidgets import (QFrame, QHBoxLayout, QHeaderView, QStackedWidget,
+from PyQt5.QtCore import QEvent, Qt
+from PyQt5.QtGui import QBrush, QColor, QFont, QKeySequence
+from PyQt5.QtWidgets import (QAction, QApplication, QFrame, QHBoxLayout,
+                             QHeaderView, QMenu, QStackedWidget,
                              QTableWidgetItem, QVBoxLayout)
 from qfluentwidgets import (CaptionLabel, ComboBox, FluentIcon as FIF, InfoBar,
                             InfoBarPosition, MessageBox, Pivot, TableWidget,
@@ -83,6 +84,13 @@ class FrameLogView(QFrame):
         self._table.horizontalHeader().setSectionResizeMode(6, QHeaderView.Stretch)
         mono = QFont("Consolas", 9)
         self._table.setFont(mono)
+
+        # 允许按单元格选中、拖选多行多列；Ctrl+C 或右键菜单复制为 TSV
+        self._table.setSelectionBehavior(TableWidget.SelectItems)
+        self._table.setSelectionMode(TableWidget.ExtendedSelection)
+        self._table.installEventFilter(self)
+        self._table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self._table.customContextMenuRequested.connect(self._on_table_context_menu)
 
         # 原始 HEX 视图
         self._hex_view = TextEdit(self)
@@ -263,3 +271,45 @@ class FrameLogView(QFrame):
                 continue
             row_type = int(txt, 16)
             self._table.setRowHidden(row, filter_type is not None and row_type != filter_type)
+
+    # ---- 复制 ----
+    def eventFilter(self, obj, event) -> bool:
+        if obj is self._table and event.type() == QEvent.KeyPress:
+            if event.matches(QKeySequence.Copy):
+                self._copy_selection()
+                return True
+        return super().eventFilter(obj, event)
+
+    def _on_table_context_menu(self, pos) -> None:
+        menu = QMenu(self._table)
+        copy_action = QAction("复制 (Ctrl+C)", menu)
+        copy_action.setEnabled(bool(self._table.selectedRanges()))
+        copy_action.triggered.connect(self._copy_selection)
+        menu.addAction(copy_action)
+        menu.exec_(self._table.viewport().mapToGlobal(pos))
+
+    def _copy_selection(self) -> None:
+        """把当前选中的表格区域拼成 TSV 塞到剪贴板。多个不连续区域按行合并。"""
+        ranges = self._table.selectedRanges()
+        if not ranges:
+            return
+        # 汇总选中的所有 (row, col)；按行聚合，按列升序排列
+        rows: dict[int, dict[int, str]] = {}
+        for r in ranges:
+            for row in range(r.topRow(), r.bottomRow() + 1):
+                if self._table.isRowHidden(row):
+                    continue
+                for col in range(r.leftColumn(), r.rightColumn() + 1):
+                    item = self._table.item(row, col)
+                    text = item.text() if item is not None else ""
+                    rows.setdefault(row, {})[col] = text
+        if not rows:
+            return
+        lines = []
+        for row in sorted(rows):
+            cols = rows[row]
+            # 按选中列升序拼接；中间空列用空字符串占位保持对齐
+            min_c, max_c = min(cols), max(cols)
+            line = "\t".join(cols.get(c, "") for c in range(min_c, max_c + 1))
+            lines.append(line)
+        QApplication.clipboard().setText("\n".join(lines))
