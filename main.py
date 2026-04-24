@@ -28,7 +28,7 @@ class MainWindow(FluentWindow):
 
         self.businessPage = BusinessPage(self._engine, self._config, self)
         self.businessPage.setObjectName("businessPage")
-        self.debugPage = DebugPage(self._engine, self._config, self)
+        self.debugPage = DebugPage(self._engine, self._config, self._cm, self)
         self.debugPage.setObjectName("debugPage")
         self.settingsPage = SettingsPage(self._config, self._cm, self)
         self.settingsPage.setObjectName("settingsPage")
