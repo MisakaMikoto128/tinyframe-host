@@ -287,3 +287,46 @@ def test_query_id_wraps_around():
                     on_timeout=lambda i, t: None, timeout_ms=100)
            for _ in range(3)]
     assert ids == [0xFFFC, 0xFFFE, 0x0000]
+
+
+def test_tick_triggers_timeout_when_elapsed():
+    tf = TinyFrame(is_master=True)
+    tf.write_impl = lambda b: None
+    timeouts = []
+    id_ = tf.query(type_=0x01, data=b"",
+                   on_response=lambda f: None,
+                   on_timeout=lambda i, t: timeouts.append((i, t)),
+                   timeout_ms=200)
+    tf.tick(100)
+    assert timeouts == []
+    tf.tick(100)
+    assert timeouts == [(id_, 0x01)]
+
+
+def test_tick_late_response_after_timeout_is_ignored():
+    tf = TinyFrame(is_master=True)
+    tf.write_impl = lambda b: None
+    responses = []
+    timeouts = []
+    id_ = tf.query(type_=0x01, data=b"",
+                   on_response=lambda f: responses.append(f),
+                   on_timeout=lambda i, t: timeouts.append(i),
+                   timeout_ms=50)
+    tf.tick(100)
+    assert timeouts == [id_]
+    # 迟到响应
+    tf.accept(tf._compose(type_=0x02, id_=id_, data=b""))
+    assert responses == []
+
+
+def test_tick_does_not_affect_pending_below_timeout():
+    tf = TinyFrame(is_master=True)
+    tf.write_impl = lambda b: None
+    responses = []
+    id_ = tf.query(type_=0x01, data=b"",
+                   on_response=lambda f: responses.append(f),
+                   on_timeout=lambda i, t: None,
+                   timeout_ms=500)
+    tf.tick(100)
+    tf.accept(tf._compose(type_=0x02, id_=id_, data=b"\x01"))
+    assert len(responses) == 1

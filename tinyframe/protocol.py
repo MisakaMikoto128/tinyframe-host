@@ -201,3 +201,15 @@ class TinyFrame:
             raise RuntimeError("write_impl 未设置，无法发送")
         frame = self._compose(type_=type_, id_=0, data=data)
         self.write_impl(frame)
+
+    def tick(self, elapsed_ms: int) -> None:
+        expired = []
+        for id_, (on_resp, on_to, remaining, type_) in list(self._pending.items()):
+            new_remaining = remaining - elapsed_ms
+            if new_remaining <= 0:
+                expired.append((id_, on_to, type_))
+            else:
+                self._pending[id_] = (on_resp, on_to, new_remaining, type_)
+        for id_, on_to, type_ in expired:
+            self._pending.pop(id_, None)
+            on_to(id_, type_)
