@@ -45,7 +45,7 @@ APP_COMPANY   = 'INFYPOWER'
 APP_COPYRIGHT = f'Copyright 2024-{datetime.now().year} INFYPOWER'
 # Files / dirs copied alongside exe in the release folder
 CONFIG_FILES  = ['config.json']          # auto-generated on first run; copied if present
-DATA_FILES    = ['ControlCAN.dll']       # CAN hardware driver DLL (required at runtime)
+DATA_FILES    = []                       # Runtime data files (TinyFrame host has none beyond img/resource dirs)
 DATA_DIRS     = ['img', 'resource']      # icons and avatars
 
 # ── Code-signing ──────────────────────────────────────────────
@@ -298,7 +298,6 @@ def build(mode: str):
         '--nofollow-import-to=PyQt5.QtQuick3D',
         '--nofollow-import-to=PyQt5.QtRemoteObjects',
         '--nofollow-import-to=PyQt5.QtSensors',
-        '--nofollow-import-to=PyQt5.QtSerialPort',
         '--nofollow-import-to=PyQt5.QtSql',
         '--nofollow-import-to=PyQt5.QtTest',
         '--nofollow-import-to=PyQt5.QtTextToSpeech',
@@ -325,8 +324,6 @@ def build(mode: str):
         '--include-package-data=qframelesswindow',
 
         # ── Data files bundled into the package ───────────────
-        # CAN hardware driver DLL
-        f'--include-data-files={SCRIPT_DIR / "ControlCAN.dll"}=ControlCAN.dll',
         # Window icon and other images
         f'--include-data-dir={SCRIPT_DIR / "img"}=img',
         # Avatar image
