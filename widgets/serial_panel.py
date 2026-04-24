@@ -206,12 +206,14 @@ class SerialPanel(QFrame):
             self._toggle.setChecked(True)
             self._toggle.blockSignals(False)
 
-    def _on_disconnected(self, reason: str) -> None:
-        self._badge.setLevel(InfoLevel.ERROR)
-        self._status_label.setText(f"未连接：{reason}")
+    def _on_disconnected(self, reason: str, is_error: bool) -> None:
+        # 主动关闭：徽章回到"信息"级别、状态文本收敛；不弹 InfoBar
+        self._badge.setLevel(InfoLevel.ERROR if is_error else InfoLevel.INFOAMTION)
+        self._status_label.setText(f"未连接：{reason}" if is_error else "未连接")
         if self._toggle.isChecked():
             self._toggle.blockSignals(True)
             self._toggle.setChecked(False)
             self._toggle.blockSignals(False)
-        InfoBar.error("串口错误", reason, duration=5000,
-                      position=InfoBarPosition.TOP, parent=self)
+        if is_error:
+            InfoBar.error("串口错误", reason, duration=5000,
+                          position=InfoBarPosition.TOP, parent=self)

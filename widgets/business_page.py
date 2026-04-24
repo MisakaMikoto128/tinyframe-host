@@ -151,9 +151,12 @@ class BusinessPage(QFrame):
         self._status_text.setText(f"已连接 — {port} @ {baud}")
         self._apply_enabled_state()
 
-    def _on_disconnected(self, reason: str) -> None:
-        self._status_badge.setLevel(InfoLevel.ERROR)
-        self._status_text.setText(f"串口未连接 — {reason}")
+    def _on_disconnected(self, reason: str, is_error: bool) -> None:
+        self._status_badge.setLevel(InfoLevel.ERROR if is_error else InfoLevel.INFOAMTION)
+        if is_error:
+            self._status_text.setText(f"串口未连接 — {reason}")
+        else:
+            self._status_text.setText("串口未连接 — 请到协议调试页连接")
         self._apply_enabled_state()
 
     def _apply_enabled_state(self) -> None:
