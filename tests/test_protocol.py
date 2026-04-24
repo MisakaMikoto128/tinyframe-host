@@ -219,3 +219,20 @@ def test_on_type_listener_triggered_for_matching_type_only():
     tf.accept(_build_frame(0x03, 0, b"\x0B"))
     assert len(type_02_captured) == 1 and type_02_captured[0].data == b"\x0A"
     assert len(type_03_captured) == 1 and type_03_captured[0].data == b"\x0B"
+
+
+def test_send_writes_composed_frame():
+    tf = TinyFrame(is_master=True)
+    sent = []
+    tf.write_impl = lambda b: sent.append(b)
+    tf.send(type_=0x03, data=b"\x12\x34\x56\x78")
+    assert len(sent) == 1
+    # Send 用 id=0（单向帧）
+    expected = tf._compose(type_=0x03, id_=0, data=b"\x12\x34\x56\x78")
+    assert sent[0] == expected
+
+
+def test_send_without_write_impl_raises():
+    tf = TinyFrame()
+    with pytest.raises(RuntimeError, match="write_impl"):
+        tf.send(type_=0x03, data=b"")

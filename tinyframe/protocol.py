@@ -56,6 +56,9 @@ class TinyFrame:
         self._type_listeners: dict[int, list[Callable[[TFFrame], None]]] = {}
         self._crc_failed_listeners: list[Callable[[TFFrame], None]] = []
 
+        # 写出回调（engine 侧注入）
+        self.write_impl: Optional[Callable[[bytes], None]] = None
+
     MAX_PAYLOAD = 64
 
     def _compose(self, type_: int, id_: int, data: bytes) -> bytes:
@@ -162,3 +165,9 @@ class TinyFrame:
             cb(frame)
         for cb in self._any_listeners:
             cb(frame)
+
+    def send(self, type_: int, data: bytes) -> None:
+        if self.write_impl is None:
+            raise RuntimeError("write_impl 未设置，无法发送")
+        frame = self._compose(type_=type_, id_=0, data=data)
+        self.write_impl(frame)
