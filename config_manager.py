@@ -5,11 +5,14 @@ from dataclasses import dataclass, asdict
 
 @dataclass
 class AppConfig:
-    device_name: str = "REG1K0100A2 充电模块"
-    voltage_max: float = 1000.0
-    voltage_min: float = 150.0
-    current_max: float = 100.0
-    current_min: float = 0.0
+    device_name: str = "TinyFrame 上位机"
+    default_port: str = ""
+    default_baud: int = 115200
+    default_timeout_ms: int = 200
+    default_poll_ms: int = 500
+    default_heartbeat_ms: int = 1000
+    chart_volt_max: float = 1000.0
+    chart_curr_max: float = 200.0
 
 
 class ConfigManager:
@@ -19,22 +22,28 @@ class ConfigManager:
     def load(self) -> AppConfig:
         if not os.path.exists(self._path):
             default = AppConfig()
-            try:
-                with open(self._path, 'w', encoding='utf-8') as f:
-                    json.dump(asdict(default), f, ensure_ascii=False, indent=2)
-            except OSError:
-                pass
+            self.save(default)
             return default
         try:
-            with open(self._path, 'r', encoding='utf-8') as f:
+            with open(self._path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            _default = AppConfig()
+            d = AppConfig()
             return AppConfig(
-                device_name=data.get("device_name", _default.device_name),
-                voltage_max=float(data.get("voltage_max", _default.voltage_max)),
-                voltage_min=float(data.get("voltage_min", _default.voltage_min)),
-                current_max=float(data.get("current_max", _default.current_max)),
-                current_min=float(data.get("current_min", _default.current_min)),
+                device_name=data.get("device_name", d.device_name),
+                default_port=str(data.get("default_port", d.default_port)),
+                default_baud=int(data.get("default_baud", d.default_baud)),
+                default_timeout_ms=int(data.get("default_timeout_ms", d.default_timeout_ms)),
+                default_poll_ms=int(data.get("default_poll_ms", d.default_poll_ms)),
+                default_heartbeat_ms=int(data.get("default_heartbeat_ms", d.default_heartbeat_ms)),
+                chart_volt_max=float(data.get("chart_volt_max", d.chart_volt_max)),
+                chart_curr_max=float(data.get("chart_curr_max", d.chart_curr_max)),
             )
         except (json.JSONDecodeError, KeyError, TypeError, ValueError):
             return AppConfig()
+
+    def save(self, cfg: AppConfig) -> None:
+        try:
+            with open(self._path, "w", encoding="utf-8") as f:
+                json.dump(asdict(cfg), f, ensure_ascii=False, indent=2)
+        except OSError:
+            pass
