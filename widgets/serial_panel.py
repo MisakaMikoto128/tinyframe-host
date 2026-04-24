@@ -33,6 +33,8 @@ class SerialPanel(QFrame):
         # ── 第 1 行控件 ──
         self._port_cb = ComboBox(self)
         self._port_cb.setMinimumWidth(260)  # 容纳 "COM8  USB-SERIAL CH340" 这样的文本
+        # 用户手动切换时回写 config.default_port；程序性刷新通过 blockSignals 规避
+        self._port_cb.currentIndexChanged.connect(self._on_port_changed)
 
         self._baud_cb = ComboBox(self)
         self._baud_cb.setFixedWidth(100)
@@ -171,6 +173,12 @@ class SerialPanel(QFrame):
             self._engine.close()
 
     # ── 配置变更持久化 ──
+    def _on_port_changed(self) -> None:
+        data = self._port_cb.currentData()
+        if isinstance(data, str) and data and data != self._config.default_port:
+            self._config.default_port = data
+            self._save_config()
+
     def _on_baud_changed(self) -> None:
         data = self._baud_cb.currentData()
         if isinstance(data, int):
@@ -198,12 +206,14 @@ class SerialPanel(QFrame):
             self._toggle.setChecked(True)
             self._toggle.blockSignals(False)
 
-    def _on_disconnected(self, reason: str) -> None:
-        self._badge.setLevel(InfoLevel.ERROR)
-        self._status_label.setText(f"未连接：{reason}")
+    def _on_disconnected(self, reason: str, is_error: bool) -> None:
+        # 主动关闭：徽章回到"信息"级别、状态文本收敛；不弹 InfoBar
+        self._badge.setLevel(InfoLevel.ERROR if is_error else InfoLevel.INFOAMTION)
+        self._status_label.setText(f"未连接：{reason}" if is_error else "未连接")
         if self._toggle.isChecked():
             self._toggle.blockSignals(True)
             self._toggle.setChecked(False)
             self._toggle.blockSignals(False)
-        InfoBar.error("串口错误", reason, duration=5000,
-                      position=InfoBarPosition.TOP, parent=self)
+        if is_error:
+            InfoBar.error("串口错误", reason, duration=5000,
+                          position=InfoBarPosition.TOP, parent=self)
