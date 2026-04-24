@@ -9,6 +9,7 @@ from qfluentwidgets import (FluentIcon as FIF, FluentWindow,
 
 from config_manager import ConfigManager
 from tinyframe import TinyFrameEngine
+from widgets.about_page import AboutPage
 from widgets.business_page import BusinessPage
 from widgets.debug_page import DebugPage
 from widgets.settings_page import SettingsPage
@@ -32,6 +33,8 @@ class MainWindow(FluentWindow):
         self.debugPage.setObjectName("debugPage")
         self.settingsPage = SettingsPage(self._config, self._cm, self)
         self.settingsPage.setObjectName("settingsPage")
+        self.aboutPage = AboutPage(self)
+        self.aboutPage.setObjectName("aboutPage")
 
         self._init_navigation()
         self._init_window()
@@ -41,6 +44,8 @@ class MainWindow(FluentWindow):
         self.addSubInterface(self.businessPage, FIF.HOME, "业务面板")
         self.addSubInterface(self.debugPage, FIF.DEVELOPER_TOOLS, "协议调试")
         self.navigationInterface.addSeparator()
+        self.addSubInterface(self.aboutPage, FIF.INFO, "关于",
+                             NavigationItemPosition.BOTTOM)
         self.addSubInterface(self.settingsPage, FIF.SETTING, "设置",
                              NavigationItemPosition.BOTTOM)
         self.navigationInterface.setAcrylicEnabled(True)

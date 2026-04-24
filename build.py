@@ -1,22 +1,19 @@
 #!/usr/bin/env python3
 """
-REG1K0100A2 充电模块上位机 - Nuitka Build Script
+TinyFrame 上位机 - Nuitka Build Script
 =======================================================
 Usage:
     python build.py [folder|onefile]
 
 Modes:
-    folder    Compile to a standalone directory (DEFAULT — required for DLL)
+    folder    Compile to a standalone directory (DEFAULT)
     onefile   Compile to a single self-contained .exe
-              WARNING: ControlCAN.dll is loaded via './ControlCAN.dll' (cwd-relative).
-              In onefile mode the working directory is where the user launches the exe,
-              so the DLL must be placed alongside the exe manually after packaging.
 
 Features:
     - Auto version from git tag, fallback to date-based string
     - Parallel C compilation (all CPU cores)
     - Size optimisation: exclude unused Qt / Python modules
-    - Bundles ControlCAN.dll, img/ and resource/ as data files
+    - Bundles img/ and resource/ as data files
     - Writes Windows PE version resource
     - Optional self-signed code signing via signtool + PowerShell cert
     - Artifacts land in  release/v<version>/
@@ -40,7 +37,7 @@ CERT_PFX     = SCRIPT_DIR / 'build_sign.pfx'
 
 # ── App metadata ──────────────────────────────────────────────
 APP_NAME      = 'INFY_POWER'
-APP_DESC      = 'REG1K0100A2 充电模块上位机'
+APP_DESC      = 'TinyFrame 上位机'
 APP_COMPANY   = 'INFYPOWER'
 APP_COPYRIGHT = f'Copyright 2024-{datetime.now().year} INFYPOWER'
 # Files / dirs copied alongside exe in the release folder
@@ -223,10 +220,6 @@ def build(mode: str):
     print(f'  Output  : {release_dir}')
     print('=' * 60)
     print()
-
-    if mode == 'onefile':
-        log('WARN', 'onefile mode: ControlCAN.dll must be placed next to the exe manually.')
-        log('WARN', '              HDL_CAN.py loads "./ControlCAN.dll" relative to cwd.')
 
     # ── Nuitka command ────────────────────────────────────────
     cmd = [
@@ -413,13 +406,12 @@ def build(mode: str):
                 shutil.copy2(src_cfg, dst_folder / cfg)
                 log('INFO', f'Copied {cfg}')
 
-        # ControlCAN.dll is already bundled via --include-data-files
-        # but copy a spare alongside the exe just in case the DLL registers itself
-        for dll in DATA_FILES:
-            src_dll = SCRIPT_DIR / dll
-            if src_dll.exists():
-                shutil.copy2(src_dll, dst_folder / dll)
-                log('INFO', f'Verified {dll} in dist folder')
+        # Additional data files alongside the exe（若以后有需要），DATA_FILES 目前为空
+        for data in DATA_FILES:
+            src = SCRIPT_DIR / data
+            if src.exists():
+                shutil.copy2(src, dst_folder / data)
+                log('INFO', f'Verified {data} in dist folder')
 
         main_exe = dst_folder / exe_name
         sign_exe(main_exe)
