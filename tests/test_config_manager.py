@@ -17,6 +17,8 @@ def test_load_creates_default_file_when_missing(tmp_path):
     assert result.device_name == "TinyFrame 上位机"
     assert result.default_port == ""
     assert result.default_baud == 115200
+    assert result.default_stop_bits == 1
+    assert result.default_parity == "none"
     assert result.default_timeout_ms == 200
     assert result.default_poll_ms == 500
     assert result.default_heartbeat_ms == 1000
@@ -84,3 +86,27 @@ def test_save_writes_all_fields(tmp_path):
     assert data["default_timeout_ms"] == 300
     # 未设置的字段保留 dataclass 默认
     assert data["default_poll_ms"] == 500
+
+
+def test_load_reads_stop_bits_and_parity(tmp_path):
+    from config_manager import ConfigManager
+
+    cfg_path = tmp_path / "config.json"
+    data = {"default_stop_bits": 2, "default_parity": "even"}
+    cfg_path.write_text(json.dumps(data), encoding="utf-8")
+    result = ConfigManager(config_path=str(cfg_path)).load()
+
+    assert result.default_stop_bits == 2
+    assert result.default_parity == "even"
+
+
+def test_load_invalid_stop_bits_and_parity_fall_back_to_default(tmp_path):
+    from config_manager import ConfigManager
+
+    cfg_path = tmp_path / "config.json"
+    data = {"default_stop_bits": 5, "default_parity": "space"}
+    cfg_path.write_text(json.dumps(data), encoding="utf-8")
+    result = ConfigManager(config_path=str(cfg_path)).load()
+
+    assert result.default_stop_bits == 1
+    assert result.default_parity == "none"

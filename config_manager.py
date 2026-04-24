@@ -8,6 +8,8 @@ class AppConfig:
     device_name: str = "TinyFrame 上位机"
     default_port: str = ""
     default_baud: int = 115200
+    default_stop_bits: int = 1          # 1 或 2
+    default_parity: str = "none"         # "none" / "even" / "odd"
     default_timeout_ms: int = 200
     default_poll_ms: int = 500
     default_heartbeat_ms: int = 1000
@@ -28,10 +30,18 @@ class ConfigManager:
             with open(self._path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             d = AppConfig()
+            parity_raw = str(data.get("default_parity", d.default_parity)).lower()
+            if parity_raw not in ("none", "even", "odd"):
+                parity_raw = d.default_parity
+            stop_bits_raw = int(data.get("default_stop_bits", d.default_stop_bits))
+            if stop_bits_raw not in (1, 2):
+                stop_bits_raw = d.default_stop_bits
             return AppConfig(
                 device_name=data.get("device_name", d.device_name),
                 default_port=str(data.get("default_port", d.default_port)),
                 default_baud=int(data.get("default_baud", d.default_baud)),
+                default_stop_bits=stop_bits_raw,
+                default_parity=parity_raw,
                 default_timeout_ms=int(data.get("default_timeout_ms", d.default_timeout_ms)),
                 default_poll_ms=int(data.get("default_poll_ms", d.default_poll_ms)),
                 default_heartbeat_ms=int(data.get("default_heartbeat_ms", d.default_heartbeat_ms)),
