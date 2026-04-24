@@ -75,7 +75,6 @@ python -m nuitka ^
     --include-package=qframelesswindow ^
     --include-package=qframelesswindow.titlebar ^
     --include-package-data=qframelesswindow ^
-    --include-data-files=ControlCAN.dll=ControlCAN.dll ^
     --include-data-dir=img=img ^
     --include-data-dir=resource=resource ^
     --nofollow-import-to=setuptools,pip,wheel ^
@@ -102,7 +101,6 @@ python -m nuitka ^
     --nofollow-import-to=PyQt5.QtQuick ^
     --nofollow-import-to=PyQt5.QtRemoteObjects ^
     --nofollow-import-to=PyQt5.QtSensors ^
-    --nofollow-import-to=PyQt5.QtSerialPort ^
     --nofollow-import-to=PyQt5.QtSql ^
     --nofollow-import-to=PyQt5.QtTest ^
     --nofollow-import-to=PyQt5.QtWebChannel ^

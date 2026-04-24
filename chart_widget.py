@@ -94,10 +94,11 @@ class _ChartCanvas(QWidget):
                              Qt.AlignRight | Qt.AlignVCenter, v_lbl)
 
             # 右轴标（功率）
-            p_lbl = _fmt_y(c._pwr_max * frac, 'W') + ('W' if c._pwr_max < 1000 else '')
-            painter.setPen(axis_r_c)
-            painter.drawText(W - rm + 4, y - 7, rm - 4, 14,
-                             Qt.AlignLeft | Qt.AlignVCenter, p_lbl)
+            if c._show_power:
+                p_lbl = _fmt_y(c._pwr_max * frac, 'W') + ('W' if c._pwr_max < 1000 else '')
+                painter.setPen(axis_r_c)
+                painter.drawText(W - rm + 4, y - 7, rm - 4, 14,
+                                 Qt.AlignLeft | Qt.AlignVCenter, p_lbl)
 
         # ── X轴时间标注 ──────────────────────────────────────
         ws = c.WINDOW_SECONDS
@@ -113,15 +114,16 @@ class _ChartCanvas(QWidget):
         painter.setFont(font9b)
         painter.setPen(axis_l_c)
         painter.drawText(0, tm - 2, lm, 14, Qt.AlignCenter, 'V / A')
-        painter.setPen(axis_r_c)
-        painter.drawText(W - rm, tm - 2, rm, 14, Qt.AlignCenter, 'W')
+        if c._show_power:
+            painter.setPen(axis_r_c)
+            painter.drawText(W - rm, tm - 2, rm, 14, Qt.AlignCenter, 'W')
         painter.setFont(font8)
 
         # ── 剪裁到绘图区 ─────────────────────────────────────
         painter.setClipRect(QRect(px, py, pw, ph))
 
         # ── 功率：渐变面积填充 + 轮廓线 ─────────────────────
-        if c._show_pwr and len(c._pwr_data) >= 2:
+        if c._show_power and c._show_pwr and len(c._pwr_data) >= 2:
             pts_pwr = list(c._pwr_data)
             path_fill = QPainterPath()
             path_line = QPainterPath()
@@ -264,8 +266,9 @@ class RealtimeChart(QFrame):
     _PUSH_MS = 150
 
     def __init__(self, volt_max=1000.0, curr_max=100.0, pwr_max=30000.0,
-                 parent=None):
+                 show_power: bool = True, parent=None):
         super().__init__(parent)
+        self._show_power = show_power
         cap = max(int(self.WINDOW_SECONDS * 1000 / self._PUSH_MS), 2)
         self._max_points = cap
         self._volt_data  = deque(maxlen=cap)
@@ -276,7 +279,7 @@ class RealtimeChart(QFrame):
         self._pwr_max    = float(pwr_max)  if pwr_max   > 0 else 30000.0
         self._show_volt  = True
         self._show_curr  = True
-        self._show_pwr   = True
+        self._show_pwr   = bool(show_power)
         self._paused     = False
         self.setFrameShape(QFrame.NoFrame)
         self._build_ui()
@@ -291,7 +294,8 @@ class RealtimeChart(QFrame):
         self._canvas.update()
         self._volt_leg.set_value(f'{volt:.1f} V')
         self._curr_leg.set_value(f'{curr:.2f} A')
-        self._pwr_leg.set_value(f'{power:.0f} W')
+        if self._pwr_leg is not None:
+            self._pwr_leg.set_value(f'{power:.0f} W')
 
     # ── 构建 UI ──────────────────────────────────────────────
     def _build_ui(self):
@@ -316,20 +320,25 @@ class RealtimeChart(QFrame):
         # 图例行
         self._volt_leg = _LegendItem('电压', '（左轴）', _VOLT_HEX, is_area=False)
         self._curr_leg = _LegendItem('电流', '（左轴）', _CURR_HEX, is_area=False)
-        self._pwr_leg  = _LegendItem('功率', '（右轴）', _PWR_HEX,  is_area=True)
+
+        if self._show_power:
+            self._pwr_leg  = _LegendItem('功率', '（右轴）', _PWR_HEX,  is_area=True)
+            self._pwr_leg.connect_toggle(
+                lambda s: self._toggle('pwr',  s == Qt.Checked))
+        else:
+            self._pwr_leg = None
 
         self._volt_leg.connect_toggle(
             lambda s: self._toggle('volt', s == Qt.Checked))
         self._curr_leg.connect_toggle(
             lambda s: self._toggle('curr', s == Qt.Checked))
-        self._pwr_leg.connect_toggle(
-            lambda s: self._toggle('pwr',  s == Qt.Checked))
 
         legend = QHBoxLayout()
         legend.setSpacing(20)
         legend.addWidget(self._volt_leg)
         legend.addWidget(self._curr_leg)
-        legend.addWidget(self._pwr_leg)
+        if self._pwr_leg is not None:
+            legend.addWidget(self._pwr_leg)
         legend.addStretch()
         vbox.addLayout(legend)
 
