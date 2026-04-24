@@ -236,3 +236,54 @@ def test_send_without_write_impl_raises():
     tf = TinyFrame()
     with pytest.raises(RuntimeError, match="write_impl"):
         tf.send(type_=0x03, data=b"")
+
+
+def test_query_allocates_even_ids():
+    tf = TinyFrame(is_master=True)
+    tf.write_impl = lambda b: None
+    ids = [tf.query(type_=0x01, data=b"", on_response=lambda f: None,
+                    on_timeout=lambda i, t: None, timeout_ms=100)
+           for _ in range(5)]
+    assert ids == [0, 2, 4, 6, 8]
+
+
+def test_query_response_triggers_on_response_and_not_on_type():
+    tf = TinyFrame(is_master=True)
+    tf.write_impl = lambda b: None
+
+    responses = []
+    type_any = []
+    tf.on_type(0x02, lambda f: type_any.append(f))
+    tf.query(type_=0x01, data=b"\x10\x04",
+             on_response=lambda f: responses.append(f),
+             on_timeout=lambda i, t: None,
+             timeout_ms=100)
+    # 响应帧：ID=0（上面分配的第一个），TYPE=0x02
+    tf.accept(tf._compose(type_=0x02, id_=0, data=b"\xAA\xBB"))
+    assert len(responses) == 1
+    assert responses[0].data == b"\xAA\xBB"
+    # on_type(0x02) 在 ID 命中时仍会触发（规范：ID 监听不屏蔽 type 监听）
+    # 如果想改成 ID 命中时跳过 type 分派，这条断言要翻转
+    assert len(type_any) == 1
+
+
+def test_query_response_with_wrong_id_does_not_trigger_on_response():
+    tf = TinyFrame(is_master=True)
+    tf.write_impl = lambda b: None
+    responses = []
+    tf.query(type_=0x01, data=b"",
+             on_response=lambda f: responses.append(f),
+             on_timeout=lambda i, t: None,
+             timeout_ms=100)
+    tf.accept(tf._compose(type_=0x02, id_=0x99, data=b""))
+    assert responses == []
+
+
+def test_query_id_wraps_around():
+    tf = TinyFrame(is_master=True)
+    tf.write_impl = lambda b: None
+    tf._next_id = 0xFFFC
+    ids = [tf.query(type_=0x01, data=b"", on_response=lambda f: None,
+                    on_timeout=lambda i, t: None, timeout_ms=100)
+           for _ in range(3)]
+    assert ids == [0xFFFC, 0xFFFE, 0x0000]

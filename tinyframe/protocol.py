@@ -59,6 +59,11 @@ class TinyFrame:
         # 写出回调（engine 侧注入）
         self.write_impl: Optional[Callable[[bytes], None]] = None
 
+        # ID 分配（MASTER 偶数自增）
+        self._next_id = 0
+        # 挂起的 query：{id: (on_response, on_timeout, remaining_ms, type_)}
+        self._pending: dict[int, tuple] = {}
+
     MAX_PAYLOAD = 64
 
     def _compose(self, type_: int, id_: int, data: bytes) -> bytes:
@@ -161,10 +166,35 @@ class TinyFrame:
             self._reset()
 
     def _dispatch(self, frame: TFFrame) -> None:
+        pending = self._pending.pop(frame.id, None)
+        if pending is not None:
+            on_resp, _on_to, _remaining, _type = pending
+            on_resp(frame)
         for cb in self._type_listeners.get(frame.type, []):
             cb(frame)
         for cb in self._any_listeners:
             cb(frame)
+
+    def _alloc_id(self) -> int:
+        if not self._is_master:
+            raise RuntimeError("SLAVE 不应分配 ID")
+        allocated = self._next_id
+        self._next_id = (self._next_id + 2) & 0xFFFF
+        return allocated
+
+    def query(self,
+              type_: int,
+              data: bytes,
+              on_response: Callable[[TFFrame], None],
+              on_timeout: Callable[[int, int], None],
+              timeout_ms: int = 200) -> int:
+        if self.write_impl is None:
+            raise RuntimeError("write_impl 未设置，无法发送")
+        id_ = self._alloc_id()
+        self._pending[id_] = (on_response, on_timeout, timeout_ms, type_ & 0xFF)
+        frame = self._compose(type_=type_, id_=id_, data=data)
+        self.write_impl(frame)
+        return id_
 
     def send(self, type_: int, data: bytes) -> None:
         if self.write_impl is None:
