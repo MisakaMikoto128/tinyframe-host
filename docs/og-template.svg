@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GitHub Open Graph 海报模板 · 1280 × 640
+  =====================================
+  使用方法：
+    1. 浏览器里打开本文件（拖进 Chrome / Edge 即可）
+    2. 用截图工具截取整块（或用 resvg-js / Inkscape 导出为 PNG）
+    3. 访问 https://github.com/MisakaMikoto128/tinyframe-host/settings
+       -> Social preview -> Edit -> 上传 PNG
+    推荐尺寸 1280x640，GitHub 会压成 1200x600 左右在社交卡片显示。
+
+  字体：Windows 自带 Microsoft YaHei 与 Consolas，若在 Linux/macOS 渲染
+    可能因字体替换导致位置轻微偏差。
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+
+  <!-- 背景渐变（Catppuccin Mocha 风） -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#181826"/>
+      <stop offset="100%" stop-color="#0f0f1a"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#60a5fa" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#bg)"/>
+
+  <!-- 左上柔光 -->
+  <circle cx="120" cy="80" r="240" fill="url(#glow)" opacity="0.7"/>
+
+  <!-- 右上 GitHub handle -->
+  <g transform="translate(1180,48)" fill="#808096" font-family="'Microsoft YaHei', sans-serif" font-size="16">
+    <text x="0" y="0" text-anchor="end">@MisakaMikoto128</text>
+  </g>
+
+  <!-- 左上角标 -->
+  <g transform="translate(64,64)">
+    <rect width="8" height="56" rx="4" fill="#60a5fa"/>
+    <text x="24" y="22" fill="#a0a0b4" font-family="'Microsoft YaHei', sans-serif" font-size="14" letter-spacing="3">SERIAL  ·  FLUENT  ·  PURE  PYTHON</text>
+    <text x="24" y="50" fill="#c0c0d0" font-family="'Microsoft YaHei', sans-serif" font-size="14">MIT · PyQt5 · qfluentwidgets 1.8</text>
+  </g>
+
+  <!-- 主标题 -->
+  <g transform="translate(64,210)">
+    <text x="0" y="0" fill="#ffffff" font-family="'Microsoft YaHei', sans-serif" font-size="84" font-weight="800" letter-spacing="-2">TinyFrame</text>
+    <text x="0" y="92" fill="#60a5fa" font-family="'Microsoft YaHei', sans-serif" font-size="84" font-weight="800" letter-spacing="-2">Host</text>
+  </g>
+
+  <!-- 副标题 -->
+  <g transform="translate(64,430)">
+    <text x="0" y="0" fill="#d0d0e0" font-family="'Microsoft YaHei', sans-serif" font-size="26" font-weight="500">PyQt5 + Fluent Design 串口上位机</text>
+    <text x="0" y="38" fill="#8080a0" font-family="'Microsoft YaHei', sans-serif" font-size="20">实时曲线 · 帧调试 · CRC16 Modbus · 纯 Python 协议栈</text>
+  </g>
+
+  <!-- 右侧帧格式可视化（映射自 about_page.py 的帧结构图） -->
+  <g transform="translate(720,172)">
+    <!-- 每块宽度映射 1:2:2:1:6:2 （DATA 拉长） -->
+    <!-- SOF -->
+    <rect x="0"   y="0" width="32"  height="92" rx="6" fill="#60a5fa"/>
+    <text x="16"  y="40" text-anchor="middle" fill="#ffffff" font-family="Consolas, monospace" font-size="16" font-weight="700">SOF</text>
+    <text x="16"  y="60" text-anchor="middle" fill="#ffffff" font-family="Consolas, monospace" font-size="10" opacity="0.85">1B</text>
+
+    <!-- ID -->
+    <rect x="36"  y="0" width="56"  height="92" rx="6" fill="#67e8f9"/>
+    <text x="64"  y="40" text-anchor="middle" fill="#ffffff" font-family="Consolas, monospace" font-size="18" font-weight="700">ID</text>
+    <text x="64"  y="60" text-anchor="middle" fill="#ffffff" font-family="Consolas, monospace" font-size="10" opacity="0.85">2B BE</text>
+
+    <!-- LEN -->
+    <rect x="96"  y="0" width="56"  height="92" rx="6" fill="#c084fc"/>
+    <text x="124" y="40" text-anchor="middle" fill="#ffffff" font-family="Consolas, monospace" font-size="18" font-weight="700">LEN</text>
+    <text x="124" y="60" text-anchor="middle" fill="#ffffff" font-family="Consolas, monospace" font-size="10" opacity="0.85">2B BE</text>
+
+    <!-- TYPE -->
+    <rect x="156" y="0" width="32"  height="92" rx="6" fill="#fb923c"/>
+    <text x="172" y="40" text-anchor="middle" fill="#ffffff" font-family="Consolas, monospace" font-size="14" font-weight="700">TYPE</text>
+    <text x="172" y="60" text-anchor="middle" fill="#ffffff" font-family="Consolas, monospace" font-size="10" opacity="0.85">1B</text>
+
+    <!-- DATA (拉长) -->
+    <rect x="192" y="0" width="196" height="92" rx="6" fill="#fde68a"/>
+    <text x="290" y="40" text-anchor="middle" fill="#2a2a40" font-family="Consolas, monospace" font-size="20" font-weight="700">DATA</text>
+    <text x="290" y="60" text-anchor="middle" fill="#2a2a40" font-family="Consolas, monospace" font-size="10" opacity="0.85">≤ 64 B</text>
+
+    <!-- CRC -->
+    <rect x="392" y="0" width="56"  height="92" rx="6" fill="#f87171"/>
+    <text x="420" y="40" text-anchor="middle" fill="#ffffff" font-family="Consolas, monospace" font-size="18" font-weight="700">CRC</text>
+    <text x="420" y="60" text-anchor="middle" fill="#ffffff" font-family="Consolas, monospace" font-size="10" opacity="0.85">Modbus</text>
+
+    <!-- 说明行 -->
+    <text x="0" y="128" fill="#808096" font-family="'Microsoft YaHei', sans-serif" font-size="14">
+      固定开销 8 字节 · CRC16 覆盖 SOF..DATA
+    </text>
+
+    <!-- 模拟曲线缩略图 -->
+    <g transform="translate(0,160)">
+      <rect x="0" y="0" width="448" height="160" rx="8" fill="#0f0f1a" stroke="#30304b" stroke-width="1"/>
+      <!-- 网格线 -->
+      <line x1="0" y1="40"  x2="448" y2="40"  stroke="#2a2a45" stroke-dasharray="3,3"/>
+      <line x1="0" y1="80"  x2="448" y2="80"  stroke="#2a2a45" stroke-dasharray="3,3"/>
+      <line x1="0" y1="120" x2="448" y2="120" stroke="#2a2a45" stroke-dasharray="3,3"/>
+      <!-- 蓝色曲线（电压） -->
+      <polyline fill="none" stroke="#60a5fa" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"
+        points="8,128 60,100 110,108 160,70 210,76 260,52 310,58 360,36 410,44 440,28"/>
+      <!-- 紫色曲线（电流） -->
+      <polyline fill="none" stroke="#c084fc" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"
+        points="8,110 60,118 110,94 160,102 210,86 260,88 310,72 360,80 410,66 440,58"/>
+      <text x="14" y="18" fill="#60a5fa" font-family="Consolas, monospace" font-size="11" font-weight="700">V / A</text>
+    </g>
+  </g>
+
+  <!-- 底部徽章行 -->
+  <g transform="translate(64,560)" font-family="'Microsoft YaHei', sans-serif" font-size="14">
+    <!-- badge helper: 圆点 + 文字 -->
+    <g>
+      <circle cx="6" cy="-4" r="5" fill="#60a5fa"/>
+      <text x="18" y="0" fill="#c0c0d0">PyQt5 5.15</text>
+    </g>
+    <g transform="translate(130,0)">
+      <circle cx="6" cy="-4" r="5" fill="#c084fc"/>
+      <text x="18" y="0" fill="#c0c0d0">qfluentwidgets 1.8</text>
+    </g>
+    <g transform="translate(330,0)">
+      <circle cx="6" cy="-4" r="5" fill="#fb923c"/>
+      <text x="18" y="0" fill="#c0c0d0">crcmod</text>
+    </g>
+    <g transform="translate(430,0)">
+      <circle cx="6" cy="-4" r="5" fill="#86efac"/>
+      <text x="18" y="0" fill="#c0c0d0">Nuitka</text>
+    </g>
+    <g transform="translate(530,0)">
+      <circle cx="6" cy="-4" r="5" fill="#f87171"/>
+      <text x="18" y="0" fill="#c0c0d0">39 tests passed</text>
+    </g>
+  </g>
+
+  <!-- 右下角版本号 -->
+  <g transform="translate(1216,600)">
+    <text x="0" y="0" text-anchor="end" fill="#4a4a66" font-family="Consolas, monospace" font-size="14" letter-spacing="2">v0.1.0 · MIT</text>
+  </g>
+</svg>
