@@ -16,3 +16,4 @@ release/*
 build_sign.pfx
 /.worktrees/
 /docs/superpowers/
+/docs/PROMOTION_DRAFTS.md
