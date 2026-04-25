@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 > nul
 echo ============================================================
-echo        REG1K0100A2 充电模块上位机  Nuitka 正式打包
+echo        TinyFrame Host  Nuitka 正式打包
 echo ============================================================
 echo.
 
@@ -60,11 +60,11 @@ python -m nuitka ^
     --follow-imports ^
     --windows-console-mode=disable ^
     --windows-icon-from-ico=img\star.ico ^
-    --windows-company-name="INFYPOWER" ^
-    --windows-product-name="REG1K0100A2 充电模块上位机" ^
+    --windows-company-name="MisakaMikoto128" ^
+    --windows-product-name="TinyFrame Host" ^
     --windows-file-version=1.0.0.0 ^
     --windows-product-version=1.0.0.0 ^
-    --windows-file-description="REG1K0100A2 充电模块上位机" ^
+    --windows-file-description="TinyFrame Host" ^
     --python-flag=no_site ^
     --python-flag=-OO ^
     --enable-plugin=pyqt5 ^
@@ -111,7 +111,7 @@ python -m nuitka ^
     --nofollow-import-to=*.tests ^
     --nofollow-import-to=*.test ^
     --nofollow-import-to=*.testing ^
-    --output-filename=INFY_POWER.exe ^
+    --output-filename=tinyframe-host.exe ^
     --output-dir=release ^
     main.py
 

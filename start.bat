@@ -21,7 +21,7 @@ if not exist ".venv\Scripts\python.exe" (
     echo "[INFO] Environment setup completed"
 )
 
-echo "[INFO] Starting INFY_POWER host application..."
+echo "[INFO] Starting TinyFrame Host application..."
 .venv\Scripts\python main.py
 if errorlevel 1 (
     echo "[ERROR] Program exited abnormally, error code: %errorlevel%"

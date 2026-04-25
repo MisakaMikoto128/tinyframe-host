@@ -36,17 +36,18 @@ RELEASE_ROOT = SCRIPT_DIR / 'release'
 CERT_PFX     = SCRIPT_DIR / 'build_sign.pfx'
 
 # ── App metadata ──────────────────────────────────────────────
-APP_NAME      = 'INFY_POWER'
-APP_DESC      = 'TinyFrame 上位机'
-APP_COMPANY   = 'INFYPOWER'
-APP_COPYRIGHT = f'Copyright 2024-{datetime.now().year} INFYPOWER'
+APP_NAME      = 'tinyframe-host'
+APP_DESC      = 'TinyFrame Host'
+APP_COMPANY   = 'MisakaMikoto128'
+APP_COPYRIGHT = f'Copyright 2024-{datetime.now().year} MisakaMikoto128'
 # Files / dirs copied alongside exe in the release folder
 CONFIG_FILES  = ['config.json']          # auto-generated on first run; copied if present
 DATA_FILES    = []                       # Runtime data files (TinyFrame host has none beyond img/resource dirs)
 DATA_DIRS     = ['img', 'resource']      # icons and avatars
 
 # ── Code-signing ──────────────────────────────────────────────
-CERT_PWD = 'INFY_POWER_Build_Sign!'
+# TODO: 请改为你自己的证书密码；公开仓库里不要放真实密码
+CERT_PWD = 'CHANGE_ME_build_sign_password'
 TIMESTAMP_SERVERS: List[str] = [
     'http://timestamp.digicert.com',
     'http://timestamp.sectigo.com',
