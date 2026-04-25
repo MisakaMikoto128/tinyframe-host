@@ -39,7 +39,7 @@ class _ChartCanvas(QWidget):
 
     _LM  = 52   # 左边距（左Y轴刻度）
     _RM  = 52   # 右边距（右Y轴刻度）
-    _TM  = 14
+    _TM  = 28
     _BM  = 30   # 下边距（X轴时间标注）
     _TICKS = 4  # 网格格数（5条线）
 
@@ -113,10 +113,10 @@ class _ChartCanvas(QWidget):
         font9b.setBold(True)
         painter.setFont(font9b)
         painter.setPen(axis_l_c)
-        painter.drawText(0, tm - 2, lm, 14, Qt.AlignCenter, 'V / A')
+        painter.drawText(0, 2, lm, 12, Qt.AlignCenter, 'V / A')
         if c._show_power:
             painter.setPen(axis_r_c)
-            painter.drawText(W - rm, tm - 2, rm, 14, Qt.AlignCenter, 'W')
+            painter.drawText(W - rm, 2, rm, 12, Qt.AlignCenter, 'W')
         painter.setFont(font8)
 
         # ── 剪裁到绘图区 ─────────────────────────────────────
