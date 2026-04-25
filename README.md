@@ -27,11 +27,13 @@ TinyFrame Host 是一个把 **[TinyFrame](https://github.com/MightyPork/TinyFram
 
 ## ✨ 截图
 
-> 🚧 截图待补充 — 可放入 `docs/screenshots/` 后替换下面占位图。
+**业务面板** — 双 Y 轴实时曲线 + 读设定点 + 自动轮询 / 心跳开关
 
-| 业务面板 | 协议调试 | 关于页 |
-| :---: | :---: | :---: |
-| <sub>*placeholder*</sub> | <sub>*placeholder*</sub> | <sub>*placeholder*</sub> |
+![业务面板](docs/screenshots/business.png)
+
+**协议调试页** — 串口面板 + 手动帧发送器（Send / Query）+ 收发日志表格
+
+![协议调试页](docs/screenshots/debug.png)
 
 ## 🔥 功能亮点
 
